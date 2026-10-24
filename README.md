@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cofre
 
-## Getting Started
+Organizador financeiro pessoal: receitas e despesas (únicas, parceladas ou fixas), contas, categorias com limite mensal e painel com fluxo de caixa. Next.js 16 + Supabase (Postgres + login), pronto para a Vercel.
 
-First, run the development server:
+## 1. Supabase (uma vez)
+
+1. Crie um projeto em [supabase.com](https://supabase.com) (plano gratuito basta).
+2. **SQL Editor** → cole todo o conteúdo de `supabase/schema.sql` → Run.
+3. **Project Settings → API**: copie a *Project URL* e a *anon public key*.
+4. **Authentication → Sign In / Providers → Email**: para uso pessoal, desligue *Confirm email* (entra direto). Depois de criar a sua conta, desligue também **Allow new users to sign up** — assim ninguém mais consegue se cadastrar.
+
+## 2. Rodar localmente
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # preencha as duas variáveis
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Crie sua conta na tela de login, depois cadastre uma conta em **Contas** (com o saldo de hoje) e comece a lançar.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 3. Deploy na Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Suba o projeto para um repositório no GitHub.
+2. Na Vercel: **Add New → Project** → importe o repositório (framework Next.js é detectado sozinho).
+3. Em **Environment Variables**, adicione `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. Deploy. Se um dia reativar a confirmação de e-mail, ajuste **Authentication → URL Configuration → Site URL** no Supabase para o domínio da Vercel.
 
-## Learn More
+## Como funciona
 
-To learn more about Next.js, take a look at the following resources:
+- **Saldo atual** = saldo inicial das contas + lançamentos *pagos* até hoje. **Projetado** soma também os pendentes (inclusive atrasados) até o fim do mês.
+- **Parcelada**: o valor informado é o total; ele é dividido em N parcelas mensais (a sobra de centavos vai para a última).
+- **Fixa mensal**: cria os próximos 12 meses. Para encerrar, apague “este e os próximos”.
+- Cada linha tem `user_id` e as políticas RLS isolam os dados por usuário, então liberar o app para outras pessoas é só reativar o cadastro; nenhum dado se mistura.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Próximos passos sugeridos
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Editar lançamento existente (hoje é apagar e recriar)
+- Cartão de crédito com fatura e melhor dia de compra
+- Importar extrato OFX/CSV
+- Investimentos (carteira, aportes, rentabilidade)
+- Estender automaticamente os lançamentos fixos (job mensal)
+- Saldos agregados em SQL (view/RPC) se o volume de lançamentos crescer muito

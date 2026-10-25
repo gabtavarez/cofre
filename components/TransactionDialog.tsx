@@ -174,7 +174,7 @@ export function TransactionDialog({
                 <span>
                   Alterar este e os próximos
                   <span className="block text-xs font-normal text-muted">
-                    Propaga descrição, categoria e conta{edit.repeat === "fixed" ? " e valor" : ""}. A data só muda neste.
+                    Propaga descrição, categoria e conta{edit.repeat === "fixed" || edit.repeat === "yearly" ? " e valor" : ""}. A data só muda neste.
                   </span>
                 </span>
               </label>
@@ -194,6 +194,9 @@ export function TransactionDialog({
                 <button type="button" onClick={() => setRepeat("fixed")} className={tab(repeat === "fixed", "bg-accent-bg text-accent-soft")}>
                   Fixa mensal
                 </button>
+                <button type="button" onClick={() => setRepeat("yearly")} className={tab(repeat === "yearly", "bg-accent-bg text-accent-soft")}>
+                  Anual
+                </button>
               </div>
               {repeat === "installment" && (
                 <label className="flex items-center gap-2 text-[13px] font-semibold text-muted">
@@ -210,6 +213,9 @@ export function TransactionDialog({
                 </label>
               )}
             </div>
+            {repeat === "yearly" && (
+              <p className="text-xs text-muted">Repete todo ano, na mesma data, pelos próximos 5 anos. Ex.: 13º em novembro e outro em dezembro.</p>
+            )}
             {repeat === "fixed" && (
               <p className="text-xs text-muted">Cria os próximos 12 meses. Dá para apagar “este e os próximos” depois.</p>
             )}

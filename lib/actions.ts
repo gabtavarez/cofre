@@ -13,6 +13,8 @@ const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
 // Quantos meses gerar para lançamentos fixos (recorrentes).
 const FIXED_MONTHS = 12;
+// Quantos anos gerar para lançamentos anuais.
+const YEARLY_COUNT = 5;
 
 /* ───────────── Lançamentos ───────────── */
 
@@ -32,7 +34,7 @@ export async function createTransaction(fd: FormData): Promise<ActionResult> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Data inválida.");
   if (!accountId) return fail("Escolha uma conta.");
   if (!Number.isFinite(amount) || amount <= 0) return fail("Informe um valor maior que zero.");
-  if (!["none", "installment", "fixed"].includes(repeat)) return fail("Repetição inválida.");
+  if (!["none", "installment", "fixed", "yearly"].includes(repeat)) return fail("Repetição inválida.");
 
   const base = {
     kind,
@@ -64,6 +66,16 @@ export async function createTransaction(fd: FormData): Promise<ActionResult> {
       date: addMonths(date, i),
       paid: i === 0 ? paid : false,
       repeat: "fixed",
+      series_id: seriesId,
+    }));
+  } else if (repeat === "yearly") {
+    const seriesId = crypto.randomUUID();
+    rows = Array.from({ length: YEARLY_COUNT }, (_, i) => ({
+      ...base,
+      amount,
+      date: addMonths(date, i * 12),
+      paid: i === 0 ? paid : false,
+      repeat: "yearly",
       series_id: seriesId,
     }));
   } else {
@@ -118,7 +130,7 @@ export async function updateTransaction(fd: FormData): Promise<ActionResult> {
       account_id: accountId,
       category_id: categoryId,
     };
-    if (tx.repeat === "fixed") shared.amount = amount;
+    if (tx.repeat === "fixed" || tx.repeat === "yearly") shared.amount = amount;
     const { error: futErr } = await supabase
       .from("transactions")
       .update(shared)

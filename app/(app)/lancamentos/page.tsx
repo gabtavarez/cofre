@@ -57,7 +57,9 @@ export default async function Lancamentos({
           ? `Parcela ${t.installment_no}/${t.installments_total}`
           : t.repeat === "fixed"
             ? "Fixa"
-            : null,
+            : t.repeat === "yearly"
+              ? "Anual"
+              : null,
       inSeries: !!t.series_id,
       edit: {
         id: t.id,
@@ -75,7 +77,9 @@ export default async function Lancamentos({
             ? `Parcela ${t.installment_no}/${t.installments_total}`
             : t.repeat === "fixed"
               ? "Fixa"
-              : null,
+              : t.repeat === "yearly"
+                ? "Anual"
+                : null,
       },
     });
   }

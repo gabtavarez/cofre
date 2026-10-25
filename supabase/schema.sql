@@ -36,7 +36,7 @@ create table if not exists public.transactions (
   amount numeric(14,2) not null check (amount > 0),
   date date not null,
   paid boolean not null default false,
-  repeat text not null default 'none' check (repeat in ('none','installment','fixed')),
+  repeat text not null default 'none' check (repeat in ('none','installment','fixed','yearly')),
   series_id uuid,
   installment_no int,
   installments_total int,

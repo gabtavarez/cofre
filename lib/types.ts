@@ -1,5 +1,5 @@
 export type Kind = "expense" | "income";
-export type Repeat = "none" | "installment" | "fixed";
+export type Repeat = "none" | "installment" | "fixed" | "yearly";
 
 export type Account = {
   id: string;

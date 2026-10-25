@@ -59,6 +59,24 @@ export default async function Lancamentos({
             ? "Fixa"
             : null,
       inSeries: !!t.series_id,
+      edit: {
+        id: t.id,
+        kind: t.kind,
+        description: t.description,
+        amount: t.amount,
+        date: t.date,
+        accountId: t.account_id,
+        categoryId: t.category_id,
+        paid: t.paid,
+        repeat: t.repeat,
+        inSeries: !!t.series_id,
+        tag:
+          t.repeat === "installment"
+            ? `Parcela ${t.installment_no}/${t.installments_total}`
+            : t.repeat === "fixed"
+              ? "Fixa"
+              : null,
+      },
     });
   }
 
@@ -122,7 +140,7 @@ export default async function Lancamentos({
                   </span>
                 </div>
                 {g.items.map((it) => (
-                  <TxRow key={it.id} t={it} />
+                  <TxRow key={it.id} t={it} accounts={accounts} categories={categories} today={today} />
                 ))}
               </div>
             ))}

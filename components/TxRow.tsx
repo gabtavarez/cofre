@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import { Icon } from "@/components/icons";
 import { deleteTransaction, setPaid } from "@/lib/actions";
+import { TransactionDialog, type EditTarget } from "@/components/TransactionDialog";
 import { brl } from "@/lib/format";
+import type { Account, Category } from "@/lib/types";
 
 export type TxRowData = {
   id: string;
@@ -17,9 +19,21 @@ export type TxRowData = {
   late: boolean;
   tag: string | null;
   inSeries: boolean;
+  edit: EditTarget;
 };
 
-export function TxRow({ t }: { t: TxRowData }) {
+export function TxRow({
+  t,
+  accounts,
+  categories,
+  today,
+}: {
+  t: TxRowData;
+  accounts: Account[];
+  categories: Category[];
+  today: string;
+}) {
+  const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +98,15 @@ export function TxRow({ t }: { t: TxRowData }) {
         </b>
         <button
           type="button"
+          onClick={() => setEditing(true)}
+          aria-label="Editar lançamento"
+          title="Editar"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-raised hover:text-text"
+        >
+          <Icon name="edit" size={18} />
+        </button>
+        <button
+          type="button"
           onClick={() => setConfirming((v) => !v)}
           aria-label="Apagar lançamento"
           className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-raised hover:text-expense-text"
@@ -107,6 +130,15 @@ export function TxRow({ t }: { t: TxRowData }) {
             </button>
           )}
         </div>
+      )}
+      {editing && (
+        <TransactionDialog
+          accounts={accounts}
+          categories={categories}
+          today={today}
+          edit={t.edit}
+          onClose={() => setEditing(false)}
+        />
       )}
       {error && <p className="bg-expense-bg px-5 py-2 text-xs font-semibold text-expense-text">{error}</p>}
     </div>

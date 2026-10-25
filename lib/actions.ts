@@ -78,6 +78,60 @@ export async function createTransaction(fd: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Edita um lançamento. scope "future": propaga descrição, categoria, conta (e valor, nas fixas) aos próximos da série. */
+export async function updateTransaction(fd: FormData): Promise<ActionResult> {
+  const id = str(fd, "id");
+  const kind = str(fd, "kind");
+  const description = str(fd, "description");
+  const date = str(fd, "date");
+  const accountId = str(fd, "account_id");
+  const categoryId = str(fd, "category_id") || null;
+  const paid = fd.get("paid") === "on";
+  const amount = parseBRL(str(fd, "amount"));
+  const scope = str(fd, "scope") === "future" ? "future" : "one";
+
+  if (!id) return fail("Lançamento inválido.");
+  if (kind !== "expense" && kind !== "income") return fail("Tipo inválido.");
+  if (!description) return fail("Informe uma descrição.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Data inválida.");
+  if (!accountId) return fail("Escolha uma conta.");
+  if (!Number.isFinite(amount) || amount <= 0) return fail("Informe um valor maior que zero.");
+
+  const supabase = await createClient();
+  const { data: tx, error: readErr } = await supabase
+    .from("transactions")
+    .select("series_id,date,repeat")
+    .eq("id", id)
+    .single();
+  if (readErr || !tx) return fail("Lançamento não encontrado.");
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ kind, description, date, account_id: accountId, category_id: categoryId, paid, amount })
+    .eq("id", id);
+  if (error) return fail(error.message);
+
+  if (scope === "future" && tx.series_id) {
+    const shared: Record<string, unknown> = {
+      kind,
+      description,
+      account_id: accountId,
+      category_id: categoryId,
+    };
+    if (tx.repeat === "fixed") shared.amount = amount;
+    const { error: futErr } = await supabase
+      .from("transactions")
+      .update(shared)
+      .eq("series_id", tx.series_id)
+      .gt("date", tx.date)
+      .neq("id", id);
+    if (futErr) return fail(futErr.message);
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function setPaid(id: string, paid: boolean): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("transactions").update({ paid }).eq("id", id);

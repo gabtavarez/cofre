@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Icon } from "@/components/icons";
-import { createTransaction } from "@/lib/actions";
+import { createTransaction, updateTransaction } from "@/lib/actions";
 import { addMonths } from "@/lib/dates";
 import { brl, parseBRL, splitInstallments } from "@/lib/format";
 import type { Account, Category, Kind, Repeat } from "@/lib/types";
@@ -44,21 +44,37 @@ export function NewTransactionButton({
   );
 }
 
-function TransactionDialog({
+export type EditTarget = {
+  id: string;
+  kind: Kind;
+  description: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  accountId: string;
+  categoryId: string | null;
+  paid: boolean;
+  repeat: Repeat;
+  inSeries: boolean;
+  tag: string | null;
+};
+
+export function TransactionDialog({
   accounts,
   categories,
   today,
   onClose,
+  edit,
 }: {
   accounts: Account[];
   categories: Category[];
   today: string;
   onClose: () => void;
+  edit?: EditTarget;
 }) {
-  const [kind, setKind] = useState<Kind>("expense");
-  const [repeat, setRepeat] = useState<Repeat>("none");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(today);
+  const [kind, setKind] = useState<Kind>(edit?.kind ?? "expense");
+  const [repeat, setRepeat] = useState<Repeat>(edit?.repeat ?? "none");
+  const [amount, setAmount] = useState(edit ? String(edit.amount).replace(".", ",") : "");
+  const [date, setDate] = useState(edit?.date ?? today);
   const [count, setCount] = useState("2");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -68,18 +84,19 @@ function TransactionDialog({
   const n = Math.max(2, Math.min(120, Number(count) || 2));
 
   const preview = useMemo(() => {
-    if (repeat !== "installment" || !Number.isFinite(total) || total <= 0) return null;
+    if (edit || repeat !== "installment" || !Number.isFinite(total) || total <= 0) return null;
     const parts = splitInstallments(total, n);
     const shown = parts.slice(0, 6).map((v, i) => ({ no: i + 1, date: addMonths(date, i), v }));
     return { parts, shown, last: addMonths(date, n - 1) };
-  }, [repeat, total, n, date]);
+  }, [edit, repeat, total, n, date]);
 
   function submit(fd: FormData) {
     setError(null);
     fd.set("kind", kind);
     fd.set("repeat", repeat);
+    if (edit) fd.set("id", edit.id);
     startTransition(async () => {
-      const res = await createTransaction(fd);
+      const res = edit ? await updateTransaction(fd) : await createTransaction(fd);
       if (res.ok) onClose();
       else setError(res.error);
     });
@@ -98,7 +115,7 @@ function TransactionDialog({
       <form
         action={submit}
         role="dialog"
-        aria-label="Novo lançamento"
+        aria-label={edit ? "Editar lançamento" : "Novo lançamento"}
         className="w-full max-w-165 rounded-3xl border border-edge bg-[#141b30] shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
       >
         <div className="flex items-center justify-between px-7 pt-5.5">
@@ -117,7 +134,7 @@ function TransactionDialog({
 
         <div className="flex flex-col gap-5 px-7 pt-5 pb-2">
           <label className="flex flex-col gap-1.5">
-            <span className={label}>{repeat === "installment" ? "Valor total (R$)" : "Valor (R$)"}</span>
+            <span className={label}>{edit ? (edit.repeat === "installment" ? "Valor da parcela (R$)" : "Valor (R$)") : repeat === "installment" ? "Valor total (R$)" : "Valor (R$)"}</span>
             <input
               name="amount"
               inputMode="decimal"
@@ -135,15 +152,36 @@ function TransactionDialog({
           <div className="flex flex-wrap gap-4">
             <label className="flex min-w-60 flex-2 flex-col gap-1.5">
               <span className={label}>Descrição</span>
-              <input name="description" required placeholder="Ex.: Mercado" className={field} />
+              <input name="description" required placeholder="Ex.: Mercado" defaultValue={edit?.description} className={field} />
             </label>
             <label className="flex min-w-38 flex-1 flex-col gap-1.5">
-              <span className={label}>{repeat === "none" ? "Data" : "Data da 1ª"}</span>
+              <span className={label}>{edit || repeat === "none" ? "Data" : "Data da 1ª"}</span>
               <input name="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={field} />
             </label>
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          {edit && edit.inSeries && (
+            <fieldset className="flex flex-col gap-2 rounded-[14px] border border-line bg-side px-4 py-3.5">
+              <legend className="px-1 text-xs font-bold text-muted">
+                Este lançamento faz parte de uma série{edit.tag ? ` (${edit.tag})` : ""}
+              </legend>
+              <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-[13px] font-semibold text-soft">
+                <input type="radio" name="scope" value="one" defaultChecked className="size-4 accent-[#8c8fff]" />
+                Alterar só este
+              </label>
+              <label className="flex min-h-9 cursor-pointer items-start gap-2.5 text-[13px] font-semibold text-soft">
+                <input type="radio" name="scope" value="future" className="mt-0.5 size-4 accent-[#8c8fff]" />
+                <span>
+                  Alterar este e os próximos
+                  <span className="block text-xs font-normal text-muted">
+                    Propaga descrição, categoria e conta{edit.repeat === "fixed" ? " e valor" : ""}. A data só muda neste.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
+          )}
+
+          <div className={`flex flex-col gap-1.5 ${edit ? "hidden" : ""}`}>
             <span className={label}>Repetição</span>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-1 rounded-[14px] border border-line bg-side p-1">
@@ -204,7 +242,7 @@ function TransactionDialog({
           <div className="flex flex-wrap gap-4">
             <label className="flex min-w-50 flex-1 flex-col gap-1.5">
               <span className={label}>Conta</span>
-              <select name="account_id" required defaultValue={accounts[0]?.id} className={field}>
+              <select name="account_id" required defaultValue={edit?.accountId ?? accounts[0]?.id} className={field}>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -214,7 +252,7 @@ function TransactionDialog({
             </label>
             <label className="flex min-w-50 flex-1 flex-col gap-1.5">
               <span className={label}>Categoria</span>
-              <select name="category_id" key={kind} defaultValue="" className={field}>
+              <select name="category_id" key={kind} defaultValue={edit && edit.kind === kind ? (edit.categoryId ?? "") : ""} className={field}>
                 <option value="">Sem categoria</option>
                 {cats.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -226,9 +264,9 @@ function TransactionDialog({
           </div>
 
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px] font-semibold text-soft">
-            <input name="paid" type="checkbox" className="size-5 accent-[#8c8fff]" />
+            <input name="paid" type="checkbox" defaultChecked={edit?.paid} className="size-5 accent-[#8c8fff]" />
             {kind === "expense" ? "Já foi pago" : "Já foi recebido"}
-            {repeat !== "none" && <span className="text-xs font-normal text-muted">(vale só para a 1ª)</span>}
+            {!edit && repeat !== "none" && <span className="text-xs font-normal text-muted">(vale só para a 1ª)</span>}
           </label>
 
           {error && (
@@ -247,7 +285,7 @@ function TransactionDialog({
             disabled={pending || accounts.length === 0}
             className="min-h-11 cursor-pointer rounded-xl bg-accent px-6 text-sm font-extrabold text-ink hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {pending ? "Salvando…" : "Salvar"}
+            {pending ? "Salvando…" : edit ? "Salvar alterações" : "Salvar"}
           </button>
         </div>
         {accounts.length === 0 && (

@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-ink: #0a0e1a;
-  --color-side: #0d1322;
-  --color-surface: #111729;
-  --color-raised: #1a2240;
+  --color-ink: #0a0f1e;
+  --color-side: #0d1326;
+  --color-surface: #151c33;
+  --color-raised: #1e2744;
   --color-line: #1e2740;
   --color-edge: #2b3563;
-  --color-text: #eaeefb;
+  --color-text: #f2f5fb;
   --color-muted: #98a3c2;
-  --color-soft: #c9d0e8;
-  --color-accent: #8c8fff;
-  --color-accent-soft: #b6b8ff;
-  --color-accent-bg: #1f2650;
-  --color-income: #34d399;
-  --color-income-text: #6ee7b7;
+  --color-soft: #c3cbe0;
+  --color-accent: #c8f169;
+  --color-accent-soft: #d9f58f;
+  --color-accent-bg: #252f14;
+  --color-income: #3ddc97;
+  --color-income-text: #7bebb9;
   --color-income-bg: #12332a;
-  --color-expense: #fb7185;
-  --color-expense-text: #fda4af;
+  --color-expense: #ff7a8a;
+  --color-expense-text: #ffa6b1;
   --color-expense-bg: #3a1a24;
-  --color-warn: #fbbf24;
-  --color-warn-text: #fcd34d;
+  --color-warn: #ffc857;
+  --color-warn-text: #ffd98a;
   --color-warn-bg: #33290f;
-  --color-invest: #38bdf8;
-  --color-invest-text: #7dd3fc;
-  --color-invest-bg: #12333f;
+  --color-invest: #b9a7ff;
+  --color-invest-text: #d3c8ff;
+  --color-invest-bg: #241f4d;
   --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-display: "Sora Variable", "Manrope Variable", system-ui, sans-serif;
 }
 
 html {
@@ -49,4 +50,10 @@ button {
 ::selection {
   background: var(--color-accent);
   color: var(--color-ink);
+}
+
+h1,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
 }

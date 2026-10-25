@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icons";
+import { Logo } from "@/components/Logo";
 import { signOut } from "@/lib/actions";
 
 const NAV = [
@@ -17,11 +18,8 @@ export function Sidebar({ email }: { email: string }) {
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-6 border-b border-line bg-side px-4 py-5 md:sticky md:top-0 md:h-screen md:w-62 md:border-r md:border-b-0 md:px-5 md:py-7 md:gap-8">
-      <div className="flex items-center gap-3 px-2">
-        <span className="flex size-8.5 items-center justify-center rounded-[11px] bg-accent text-ink">
-          <Icon name="logo" stroke={2.2} />
-        </span>
-        <span className="text-xl font-extrabold tracking-tight">Cofre</span>
+      <div className="px-2">
+        <Logo />
       </div>
 
       <nav className="flex gap-1 overflow-x-auto md:flex-col">
@@ -34,7 +32,7 @@ export function Sidebar({ email }: { email: string }) {
               aria-current={active ? "page" : undefined}
               className={`flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3.5 text-sm whitespace-nowrap transition-colors ${
                 active
-                  ? "bg-raised font-bold text-text"
+                  ? "bg-accent font-extrabold text-ink"
                   : "font-semibold text-muted hover:bg-surface hover:text-text"
               }`}
             >
@@ -46,7 +44,7 @@ export function Sidebar({ email }: { email: string }) {
         <span className="flex min-h-11 shrink-0 cursor-default items-center gap-3 rounded-xl px-3.5 text-sm font-semibold text-muted/70 whitespace-nowrap">
           <Icon name="trend" />
           Investimentos
-          <span className="ml-auto rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-bold text-accent-soft">
+          <span className="ml-auto rounded-full bg-invest-bg px-2 py-0.5 text-[11px] font-bold text-invest-text">
             Em breve
           </span>
         </span>

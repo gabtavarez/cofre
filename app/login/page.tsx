@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Icon } from "@/components/icons";
+import { Logo } from "@/components/Logo";
 import { signIn, signUp } from "@/lib/actions";
 
 const field =
@@ -24,12 +24,7 @@ export default function LoginPage() {
         }}
         className="flex w-full max-w-sm flex-col gap-5 rounded-3xl border border-line bg-surface p-8"
       >
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-accent text-ink">
-            <Icon name="logo" size={24} stroke={2.2} />
-          </span>
-          <span className="text-2xl font-extrabold tracking-tight">Cofre</span>
-        </div>
+        <Logo size={40} textClass="text-2xl" />
 
         <h1 className="text-lg font-bold">{mode === "in" ? "Entrar" : "Criar conta"}</h1>
 

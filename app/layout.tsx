@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
+import "@fontsource-variable/sora";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Cofre",
-  description: "Organizador financeiro pessoal",
+  title: "Mymony",
+  description: "Mymony — seu dinheiro, do seu jeito.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

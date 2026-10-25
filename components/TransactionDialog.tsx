@@ -166,11 +166,11 @@ export function TransactionDialog({
                 Este lançamento faz parte de uma série{edit.tag ? ` (${edit.tag})` : ""}
               </legend>
               <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-[13px] font-semibold text-soft">
-                <input type="radio" name="scope" value="one" defaultChecked className="size-4 accent-[#8c8fff]" />
+                <input type="radio" name="scope" value="one" defaultChecked className="size-4 accent-[#c8f169]" />
                 Alterar só este
               </label>
               <label className="flex min-h-9 cursor-pointer items-start gap-2.5 text-[13px] font-semibold text-soft">
-                <input type="radio" name="scope" value="future" className="mt-0.5 size-4 accent-[#8c8fff]" />
+                <input type="radio" name="scope" value="future" className="mt-0.5 size-4 accent-[#c8f169]" />
                 <span>
                   Alterar este e os próximos
                   <span className="block text-xs font-normal text-muted">
@@ -264,7 +264,7 @@ export function TransactionDialog({
           </div>
 
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px] font-semibold text-soft">
-            <input name="paid" type="checkbox" defaultChecked={edit?.paid} className="size-5 accent-[#8c8fff]" />
+            <input name="paid" type="checkbox" defaultChecked={edit?.paid} className="size-5 accent-[#c8f169]" />
             {kind === "expense" ? "Já foi pago" : "Já foi recebido"}
             {!edit && repeat !== "none" && <span className="text-xs font-normal text-muted">(vale só para a 1ª)</span>}
           </label>

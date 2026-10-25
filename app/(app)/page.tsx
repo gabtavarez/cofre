@@ -87,7 +87,7 @@ export default async function Dashboard({
           <span className="text-[13px] text-muted">
             {monthIsCurrent ? "Hoje, " + dm(today) : "Visualizando outro mês"}
           </span>
-          <h1 className="text-3xl font-extrabold tracking-tight">Visão geral</h1>
+          <h1 className="font-display text-3xl font-extrabold">Visão geral</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <MonthNav month={month} basePath="/" />
@@ -107,30 +107,30 @@ export default async function Dashboard({
 
       {/* KPIs */}
       <section className="flex flex-wrap gap-4">
-        <div className="flex min-w-55 flex-1 flex-col gap-2.5 rounded-[20px] border border-edge bg-[#161d3a] p-5.5">
-          <span className="text-[13px] font-semibold text-[#b3bbd6]">Saldo atual</span>
-          <span className="text-3xl font-extrabold tracking-tight">{brl(series.currentBalance)}</span>
-          <span className="text-xs text-[#b3bbd6]">
-            Projetado p/ fim do mês: <b className="text-text">{brl(series.endBalance)}</b>
+        <div className="flex min-w-55 flex-1 flex-col gap-2.5 rounded-[20px] bg-accent p-5.5 text-ink">
+          <span className="text-[13px] font-bold">Saldo atual</span>
+          <span className="font-display text-3xl font-extrabold">{brl(series.currentBalance)}</span>
+          <span className="text-xs font-semibold">
+            Projetado p/ fim do mês: <b>{brl(series.endBalance)}</b>
           </span>
         </div>
         <div className={`${card} flex min-w-55 flex-1 flex-col gap-2.5`}>
           <span className="text-[13px] font-semibold text-muted">Receitas do mês</span>
-          <span className="text-3xl font-extrabold tracking-tight text-income-text">{brl(sum.income)}</span>
+          <span className="font-display text-3xl font-extrabold text-income-text">{brl(sum.income)}</span>
           <span className="text-xs text-muted">
             Recebido {brl(sum.incomePaid)} · a receber {brl(round2(sum.income - sum.incomePaid))}
           </span>
         </div>
         <div className={`${card} flex min-w-55 flex-1 flex-col gap-2.5`}>
           <span className="text-[13px] font-semibold text-muted">Despesas do mês</span>
-          <span className="text-3xl font-extrabold tracking-tight text-expense-text">{brl(sum.expense)}</span>
+          <span className="font-display text-3xl font-extrabold text-expense-text">{brl(sum.expense)}</span>
           <span className="text-xs text-muted">
             Pago {brl(sum.expensePaid)} · a pagar <b className="text-expense-text">{brl(sum.expenseOpen)}</b>
           </span>
         </div>
         <div className={`${card} flex min-w-55 flex-1 flex-col gap-2.5`}>
           <span className="text-[13px] font-semibold text-muted">Resultado</span>
-          <span className="text-3xl font-extrabold tracking-tight">{brl(sum.result)}</span>
+          <span className="font-display text-3xl font-extrabold">{brl(sum.result)}</span>
           {saved !== null ? (
             <span
               className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-bold ${

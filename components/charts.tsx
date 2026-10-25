@@ -134,7 +134,7 @@ export function CashflowChart({ series }: { series: Series }) {
   );
 }
 
-const SLICE_COLORS = ["#8c8fff", "#38bdf8", "#fbbf24", "#64748b"];
+const SLICE_COLORS = ["#c8f169", "#b9a7ff", "#38bdf8", "#ffc857", "#64748b"];
 export const sliceColor = (i: number) => SLICE_COLORS[i % SLICE_COLORS.length];
 
 export function Donut({ slices, total }: { slices: CategorySlice[]; total: number }) {

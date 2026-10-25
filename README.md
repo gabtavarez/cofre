@@ -1,6 +1,6 @@
-# Cofre
+# Mymony
 
-Organizador financeiro pessoal: receitas e despesas (únicas, parceladas ou fixas), contas, categorias com limite mensal e painel com fluxo de caixa. Next.js 16 + Supabase (Postgres + login), pronto para a Vercel.
+Mymony (my money) — organizador financeiro pessoal: receitas e despesas (únicas, parceladas ou fixas), contas, categorias com limite mensal e painel com fluxo de caixa. Next.js 16 + Supabase (Postgres + login), pronto para a Vercel.
 
 ## 1. Supabase (uma vez)
 

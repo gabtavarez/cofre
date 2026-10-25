@@ -189,7 +189,7 @@ export function MonthlyBars({ data }: { data: BarMonth[] }) {
   const h = (v: number) => Math.max(Math.round((v / max) * 130), v > 0 ? 3 : 0);
 
   return (
-    <div role="img" aria-label="Receitas e despesas dos últimos 6 meses">
+    <div role="img" aria-label="Receitas e despesas por mês">
       <div className="flex h-37.5 items-end justify-between gap-2 border-b border-line">
         {data.map((d) => (
           <div key={d.label} className="flex items-end gap-1">

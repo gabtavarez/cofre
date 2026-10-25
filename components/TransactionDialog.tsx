@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Icon } from "@/components/icons";
 import { createTransaction, updateTransaction } from "@/lib/actions";
 import { addMonths } from "@/lib/dates";
-import { brl, parseBRL, splitInstallments } from "@/lib/format";
+import { brl, parseBRL, splitInstallments, suggestCategory } from "@/lib/format";
 import type { Account, Category, Kind, Repeat } from "@/lib/types";
 
 const field =
@@ -15,10 +15,12 @@ export function NewTransactionButton({
   accounts,
   categories,
   today,
+  hints,
 }: {
   accounts: Account[];
   categories: Category[];
   today: string;
+  hints?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -37,6 +39,7 @@ export function NewTransactionButton({
           accounts={accounts}
           categories={categories}
           today={today}
+          hints={hints}
           onClose={() => setOpen(false)}
         />
       )}
@@ -64,18 +67,23 @@ export function TransactionDialog({
   today,
   onClose,
   edit,
+  hints,
 }: {
   accounts: Account[];
   categories: Category[];
   today: string;
   onClose: () => void;
   edit?: EditTarget;
+  hints?: Record<string, string>;
 }) {
   const [kind, setKind] = useState<Kind>(edit?.kind ?? "expense");
   const [repeat, setRepeat] = useState<Repeat>(edit?.repeat ?? "none");
   const [amount, setAmount] = useState(edit ? String(edit.amount).replace(".", ",") : "");
   const [date, setDate] = useState(edit?.date ?? today);
   const [count, setCount] = useState("2");
+  const [categoryId, setCategoryId] = useState<string>(edit?.categoryId ?? "");
+  const [catTouched, setCatTouched] = useState(false);
+  const [suggested, setSuggested] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -152,7 +160,26 @@ export function TransactionDialog({
           <div className="flex flex-wrap gap-4">
             <label className="flex min-w-60 flex-2 flex-col gap-1.5">
               <span className={label}>Descrição</span>
-              <input name="description" required placeholder="Ex.: Mercado" defaultValue={edit?.description} className={field} />
+              <input
+                name="description"
+                required
+                placeholder="Ex.: Mercado"
+                defaultValue={edit?.description}
+                onChange={(e) => {
+                  if (edit || catTouched || !hints) return;
+                  const id = suggestCategory(e.target.value, hints);
+                  const cat = id ? categories.find((c) => c.id === id) : undefined;
+                  if (cat) {
+                    setKind(cat.kind);
+                    setCategoryId(cat.id);
+                    setSuggested(true);
+                  } else if (suggested) {
+                    setCategoryId("");
+                    setSuggested(false);
+                  }
+                }}
+                className={field}
+              />
             </label>
             <label className="flex min-w-38 flex-1 flex-col gap-1.5">
               <span className={label}>{edit || repeat === "none" ? "Data" : "Data da 1ª"}</span>
@@ -257,8 +284,19 @@ export function TransactionDialog({
               </select>
             </label>
             <label className="flex min-w-50 flex-1 flex-col gap-1.5">
-              <span className={label}>Categoria</span>
-              <select name="category_id" key={kind} defaultValue={edit && edit.kind === kind ? (edit.categoryId ?? "") : ""} className={field}>
+              <span className={label}>
+                Categoria{suggested && <span className="ml-1.5 font-semibold text-accent-soft">· sugerida pela descrição</span>}
+              </span>
+              <select
+                name="category_id"
+                value={cats.some((c) => c.id === categoryId) ? categoryId : ""}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setCatTouched(true);
+                  setSuggested(false);
+                }}
+                className={field}
+              >
                 <option value="">Sem categoria</option>
                 {cats.map((c) => (
                   <option key={c.id} value={c.id}>

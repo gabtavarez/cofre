@@ -38,6 +38,5 @@ Crie sua conta na tela de login, depois cadastre uma conta em **Contas** (com o 
 - Editar lançamento existente (hoje é apagar e recriar)
 - Cartão de crédito com fatura e melhor dia de compra
 - Importar extrato OFX/CSV
-- Investimentos (carteira, aportes, rentabilidade)
 - Estender automaticamente os lançamentos fixos (job mensal)
 - Saldos agregados em SQL (view/RPC) se o volume de lançamentos crescer muito

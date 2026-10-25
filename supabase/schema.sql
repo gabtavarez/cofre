@@ -89,3 +89,78 @@ create trigger transactions_owner_check
 -- inofensivo se estiver marcado, pois o RLS acima continua protegendo os dados).
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.accounts, public.categories, public.transactions to authenticated;
+
+-- Metas e investimentos ------------------------------------------------------
+create table if not exists public.goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  target_amount numeric(14,2) not null check (target_amount > 0),
+  target_date date,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.goal_moves (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  goal_id uuid not null references public.goals(id) on delete cascade,
+  amount numeric(14,2) not null check (amount <> 0),
+  date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.investments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  kind text not null default 'renda_fixa' check (kind in ('renda_fixa','acoes','fiis','cripto','tesouro','outro')),
+  current_value numeric(14,2) not null default 0,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.investment_moves (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  investment_id uuid not null references public.investments(id) on delete cascade,
+  amount numeric(14,2) not null check (amount <> 0), -- positivo = aporte, negativo = resgate
+  date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create index if not exists goal_moves_goal_idx on public.goal_moves (goal_id);
+create index if not exists investment_moves_inv_idx on public.investment_moves (investment_id);
+
+alter table public.goals enable row level security;
+alter table public.goal_moves enable row level security;
+alter table public.investments enable row level security;
+alter table public.investment_moves enable row level security;
+
+do $$
+declare t text;
+begin
+  foreach t in array array['goals','goal_moves','investments','investment_moves'] loop
+    execute format('drop policy if exists "own rows" on public.%I', t);
+    execute format('create policy "own rows" on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
+  end loop;
+end $$;
+
+create or replace function public.check_child_owner() returns trigger
+language plpgsql
+set search_path = public as $$
+begin
+  if tg_table_name = 'goal_moves' then
+    if not exists (select 1 from public.goals g where g.id = new.goal_id and g.user_id = new.user_id) then
+      raise exception 'meta inválida';
+    end if;
+  elsif tg_table_name = 'investment_moves' then
+    if not exists (select 1 from public.investments i where i.id = new.investment_id and i.user_id = new.user_id) then
+      raise exception 'investimento inválido';
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists goal_moves_owner_check on public.goal_moves;
+create trigger goal_moves_owner_check before insert or update on public.goal_moves
+  for each row execute function public.check_child_owner();
+drop trigger if exists investment_moves_owner_check on public.investment_moves;
+create trigger investment_moves_owner_check before insert or update on public.investment_moves
+  for each row execute function public.check_child_owner();
+
+grant select, insert, update, delete on public.goals, public.goal_moves, public.investments, public.investment_moves to authenticated;

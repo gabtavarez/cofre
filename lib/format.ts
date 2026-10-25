@@ -28,3 +28,25 @@ export function splitInstallments(total: number, n: number): number[] {
   parts[n - 1] += cents - base * n;
   return parts.map((c) => c / 100);
 }
+
+/** Normaliza uma descrição para comparar (minúsculas, sem acento nem pontuação). */
+export function normalizeDesc(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Procura a categoria sugerida para uma descrição (igual, ou começando igual). */
+export function suggestCategory(desc: string, hints: Record<string, string>): string | null {
+  const n = normalizeDesc(desc);
+  if (n.length < 3) return null;
+  if (hints[n]) return hints[n];
+  for (const [k, v] of Object.entries(hints)) {
+    if (n.length >= 4 && (k.startsWith(n) || n.startsWith(k)) && k.length >= 4) return v;
+  }
+  return null;
+}

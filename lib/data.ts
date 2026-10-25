@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeDesc } from "@/lib/format";
 import type { Account, Category, Transaction } from "@/lib/types";
 
 export type TxWithRefs = Transaction & {
@@ -20,7 +22,7 @@ const DEFAULT_CATEGORIES: { name: string; kind: "expense" | "income" }[] = [
 ];
 
 /** Contas e categorias do usuário; cria o básico no primeiro acesso. */
-export async function getBase(): Promise<{ accounts: Account[]; categories: Category[] }> {
+export const getBase = cache(async function getBase(): Promise<{ accounts: Account[]; categories: Category[] }> {
   const supabase = await createClient();
 
   const [{ data: accounts }, { data: categories }] = await Promise.all([
@@ -38,7 +40,7 @@ export async function getBase(): Promise<{ accounts: Account[]; categories: Cate
   }
 
   return { accounts: (accounts ?? []) as Account[], categories: categories as Category[] };
-}
+});
 
 const REFS = "*, category:categories(name), account:accounts(name)";
 
@@ -78,4 +80,87 @@ export async function getUpcoming(limitDate: string, limit = 5): Promise<TxWithR
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as TxWithRefs[];
+}
+
+/** Descrição normalizada → categoria mais usada (para sugerir a categoria ao digitar). */
+export const getCategoryHints = cache(async function getCategoryHints(): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("description,category_id")
+    .not("category_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(600);
+  const counts = new Map<string, Map<string, number>>();
+  for (const r of data ?? []) {
+    const key = normalizeDesc(r.description);
+    if (!key) continue;
+    const m = counts.get(key) ?? new Map<string, number>();
+    m.set(r.category_id as string, (m.get(r.category_id as string) ?? 0) + 1);
+    counts.set(key, m);
+  }
+  const out: Record<string, string> = {};
+  for (const [key, m] of counts) out[key] = [...m.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  return out;
+});
+
+
+export type Goal = {
+  id: string;
+  name: string;
+  target_amount: number;
+  target_date: string | null;
+  saved: number;
+};
+
+export async function getGoals(): Promise<Goal[]> {
+  const supabase = await createClient();
+  const [{ data: goals }, { data: moves }] = await Promise.all([
+    supabase.from("goals").select("id,name,target_amount,target_date").order("created_at"),
+    supabase.from("goal_moves").select("goal_id,amount").limit(20000),
+  ]);
+  const saved = new Map<string, number>();
+  for (const m of moves ?? []) saved.set(m.goal_id, (saved.get(m.goal_id) ?? 0) + Number(m.amount));
+  return (goals ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    target_amount: Number(g.target_amount),
+    target_date: g.target_date,
+    saved: Math.round((saved.get(g.id) ?? 0) * 100) / 100,
+  }));
+}
+
+export type InvestmentKind = "renda_fixa" | "acoes" | "fiis" | "cripto" | "tesouro" | "outro";
+export const INVESTMENT_KIND_LABEL: Record<InvestmentKind, string> = {
+  renda_fixa: "Renda fixa",
+  tesouro: "Tesouro Direto",
+  acoes: "Ações",
+  fiis: "Fundos imobiliários",
+  cripto: "Cripto",
+  outro: "Outro",
+};
+
+export type Investment = {
+  id: string;
+  name: string;
+  kind: InvestmentKind;
+  current_value: number;
+  invested: number; // aportes − resgates
+};
+
+export async function getInvestments(): Promise<Investment[]> {
+  const supabase = await createClient();
+  const [{ data: invs }, { data: moves }] = await Promise.all([
+    supabase.from("investments").select("id,name,kind,current_value").order("created_at"),
+    supabase.from("investment_moves").select("investment_id,amount").limit(20000),
+  ]);
+  const invested = new Map<string, number>();
+  for (const m of moves ?? []) invested.set(m.investment_id, (invested.get(m.investment_id) ?? 0) + Number(m.amount));
+  return (invs ?? []).map((i) => ({
+    id: i.id,
+    name: i.name,
+    kind: i.kind as InvestmentKind,
+    current_value: Number(i.current_value),
+    invested: Math.round((invested.get(i.id) ?? 0) * 100) / 100,
+  }));
 }

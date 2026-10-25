@@ -1,7 +1,7 @@
 import { MonthNav } from "@/components/MonthNav";
 import { NewTransactionButton } from "@/components/TransactionDialog";
 import { TxRow, type TxRowData } from "@/components/TxRow";
-import { getBase, getBalanceRows, getTransactionsBetween } from "@/lib/data";
+import { getBase, getBalanceRows, getCategoryHints, getTransactionsBetween } from "@/lib/data";
 import { dayHeading, dm, monthBounds, resolveMonth, todayISO } from "@/lib/dates";
 import { brl } from "@/lib/format";
 import { round2, signed, summarize } from "@/lib/finance";
@@ -16,10 +16,11 @@ export default async function Lancamentos({
   const month = resolveMonth(m);
   const { start, end } = monthBounds(month);
 
-  const [{ accounts, categories }, txs, rows] = await Promise.all([
+  const [{ accounts, categories }, txs, rows, hints] = await Promise.all([
     getBase(),
     getTransactionsBetween(start, end),
     getBalanceRows(end),
+    getCategoryHints(),
   ]);
 
   const initial = accounts.reduce((s, a) => s + a.initial_balance, 0);
@@ -90,7 +91,7 @@ export default async function Lancamentos({
         <h1 className="text-3xl font-extrabold tracking-tight">Lançamentos</h1>
         <div className="flex flex-wrap items-center gap-3">
           <MonthNav month={month} basePath="/lancamentos" />
-          <NewTransactionButton accounts={accounts} categories={categories} today={today} />
+          <NewTransactionButton accounts={accounts} categories={categories} today={today} hints={hints} />
         </div>
       </header>
 

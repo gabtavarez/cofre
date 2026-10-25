@@ -12,7 +12,7 @@ import {
   shiftMonth,
   todayISO,
 } from "@/lib/dates";
-import { getBalanceRows, getBase, getTransactionsBetween, getUpcoming } from "@/lib/data";
+import { getBalanceRows, getBase, getCategoryHints, getTransactionsBetween, getUpcoming } from "@/lib/data";
 import { brl } from "@/lib/format";
 import { dailySeries, expenseByCategory, round2, signed, summarize } from "@/lib/finance";
 
@@ -29,11 +29,12 @@ export default async function Dashboard({
   const { start, end } = monthBounds(month);
   const firstMonth = shiftMonth(month, -5);
 
-  const [base, txs6, balanceRows, upcoming] = await Promise.all([
+  const [base, txs6, balanceRows, upcoming, hints] = await Promise.all([
     getBase(),
     getTransactionsBetween(monthBounds(firstMonth).start, end),
     getBalanceRows(end > today ? end : today),
     getUpcoming(addDays(today, 60), 5),
+    getCategoryHints(),
   ]);
 
   const { accounts, categories } = base;
@@ -91,7 +92,7 @@ export default async function Dashboard({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <MonthNav month={month} basePath="/" />
-          <NewTransactionButton accounts={accounts} categories={categories} today={today} />
+          <NewTransactionButton accounts={accounts} categories={categories} today={today} hints={hints} />
         </div>
       </header>
 

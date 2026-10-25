@@ -11,6 +11,9 @@ const NAV = [
   { href: "/lancamentos", label: "Lançamentos", icon: "list" },
   { href: "/contas", label: "Contas", icon: "wallet" },
   { href: "/categorias", label: "Categorias e limites", icon: "pie" },
+  { href: "/relatorios", label: "Relatórios", icon: "bars" },
+  { href: "/metas", label: "Metas", icon: "target" },
+  { href: "/investimentos", label: "Investimentos", icon: "trend" },
 ] as const;
 
 export function Sidebar({ email }: { email: string }) {
@@ -41,13 +44,6 @@ export function Sidebar({ email }: { email: string }) {
             </Link>
           );
         })}
-        <span className="flex min-h-11 shrink-0 cursor-default items-center gap-3 rounded-xl px-3.5 text-sm font-semibold text-muted/70 whitespace-nowrap">
-          <Icon name="trend" />
-          Investimentos
-          <span className="ml-auto rounded-full bg-invest-bg px-2 py-0.5 text-[11px] font-bold text-invest-text">
-            Em breve
-          </span>
-        </span>
       </nav>
 
       <div className="hidden flex-col gap-2 md:mt-auto md:flex">

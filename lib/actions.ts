@@ -281,3 +281,106 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+/* ───────────── Metas ───────────── */
+
+export async function createGoal(fd: FormData): Promise<ActionResult> {
+  const name = str(fd, "name");
+  const target = parseBRL(str(fd, "target_amount"));
+  const date = str(fd, "target_date") || null;
+  if (!name) return fail("Dê um nome para a meta.");
+  if (!Number.isFinite(target) || target <= 0) return fail("Informe o valor da meta.");
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Data inválida.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("goals").insert({ name, target_amount: target, target_date: date });
+  if (error) return fail(error.message);
+  revalidatePath("/metas");
+  return { ok: true };
+}
+
+export async function deleteGoal(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("goals").delete().eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/metas");
+  return { ok: true };
+}
+
+/** Guardar (positivo) ou retirar (negativo) dinheiro de uma meta. */
+export async function addGoalMove(goalId: string, withdraw: boolean, fd: FormData): Promise<ActionResult> {
+  const v = parseBRL(str(fd, "amount"));
+  if (!Number.isFinite(v) || v <= 0) return fail("Informe um valor maior que zero.");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("goal_moves")
+    .insert({ goal_id: goalId, amount: withdraw ? -v : v });
+  if (error) return fail(error.message);
+  revalidatePath("/metas");
+  return { ok: true };
+}
+
+/* ───────────── Investimentos ───────────── */
+
+const INVESTMENT_KINDS = ["renda_fixa", "acoes", "fiis", "cripto", "tesouro", "outro"];
+
+export async function createInvestment(fd: FormData): Promise<ActionResult> {
+  const name = str(fd, "name");
+  const kind = str(fd, "kind") || "renda_fixa";
+  const initial = str(fd, "amount") ? parseBRL(str(fd, "amount")) : 0;
+  if (!name) return fail("Dê um nome ao investimento.");
+  if (!INVESTMENT_KINDS.includes(kind)) return fail("Tipo inválido.");
+  if (!Number.isFinite(initial) || initial < 0) return fail("Valor inválido.");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("investments")
+    .insert({ name, kind, current_value: initial })
+    .select("id")
+    .single();
+  if (error || !data) return fail(error?.message ?? "Erro ao salvar.");
+  if (initial > 0) {
+    const { error: e2 } = await supabase.from("investment_moves").insert({ investment_id: data.id, amount: initial });
+    if (e2) return fail(e2.message);
+  }
+  revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+export async function deleteInvestment(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("investments").delete().eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+/** Aporte (soma ao valor atual e ao investido) ou resgate. */
+export async function addInvestmentMove(id: string, withdraw: boolean, fd: FormData): Promise<ActionResult> {
+  const v = parseBRL(str(fd, "amount"));
+  if (!Number.isFinite(v) || v <= 0) return fail("Informe um valor maior que zero.");
+  const supabase = await createClient();
+  const { data: inv, error: readErr } = await supabase
+    .from("investments")
+    .select("current_value")
+    .eq("id", id)
+    .single();
+  if (readErr || !inv) return fail("Investimento não encontrado.");
+  const signedV = withdraw ? -v : v;
+  const next = Math.max(0, Math.round((Number(inv.current_value) + signedV) * 100) / 100);
+  const { error } = await supabase.from("investment_moves").insert({ investment_id: id, amount: signedV });
+  if (error) return fail(error.message);
+  const { error: e2 } = await supabase.from("investments").update({ current_value: next }).eq("id", id);
+  if (e2) return fail(e2.message);
+  revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+/** Atualiza quanto o investimento vale hoje (a diferença para o investido é a rentabilidade). */
+export async function setInvestmentValue(id: string, fd: FormData): Promise<ActionResult> {
+  const v = parseBRL(str(fd, "amount"));
+  if (!Number.isFinite(v) || v < 0) return fail("Valor inválido.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("investments").update({ current_value: v }).eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/investimentos");
+  return { ok: true };
+}

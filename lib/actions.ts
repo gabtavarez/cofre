@@ -183,6 +183,54 @@ export async function deleteTransaction(
   return { ok: true };
 }
 
+/** Ajusta o saldo de uma conta numa data criando uma receita/despesa (já paga) com a diferença. */
+export async function adjustBalance(fd: FormData): Promise<ActionResult> {
+  const accountId = str(fd, "account_id");
+  const date = str(fd, "date");
+  const categoryId = str(fd, "category_id") || null;
+  const debtor = str(fd, "sign") === "debtor";
+  const raw = parseBRL(str(fd, "balance"));
+
+  if (!accountId) return fail("Conta inválida.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Data inválida.");
+  if (!Number.isFinite(raw) || raw < 0) return fail("Informe o novo saldo.");
+  const target = debtor ? -raw : raw;
+
+  const supabase = await createClient();
+  const [{ data: acc }, { data: rows, error }] = await Promise.all([
+    supabase.from("accounts").select("initial_balance").eq("id", accountId).single(),
+    supabase
+      .from("transactions")
+      .select("kind,amount")
+      .eq("account_id", accountId)
+      .eq("paid", true)
+      .lte("date", date),
+  ]);
+  if (!acc || error) return fail("Conta não encontrada.");
+
+  const current = (rows ?? []).reduce(
+    (s, t) => s + (t.kind === "income" ? Number(t.amount) : -Number(t.amount)),
+    Number(acc.initial_balance),
+  );
+  const diff = Math.round((target - current) * 100) / 100;
+  if (diff === 0) return fail("O saldo já é esse nessa data.");
+
+  const { error: insErr } = await supabase.from("transactions").insert({
+    account_id: accountId,
+    category_id: categoryId,
+    kind: diff > 0 ? "income" : "expense",
+    description: "Ajuste de saldo",
+    amount: Math.abs(diff),
+    date,
+    paid: true,
+    repeat: "none",
+  });
+  if (insErr) return fail(insErr.message);
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 /* ───────────── Contas ───────────── */
 
 export async function createAccount(fd: FormData): Promise<ActionResult> {

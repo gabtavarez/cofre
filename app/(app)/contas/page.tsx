@@ -1,3 +1,4 @@
+import { AdjustBalanceButton } from "@/components/AdjustBalanceButton";
 import { ActionForm, DeleteButton, Field, fieldCls } from "@/components/forms";
 import { createAccount, deleteAccount } from "@/lib/actions";
 import { getBalanceRows, getBase } from "@/lib/data";
@@ -8,7 +9,7 @@ import { ACCOUNT_KIND_LABEL } from "@/lib/types";
 
 export default async function Contas() {
   const today = todayISO();
-  const [{ accounts }, rows] = await Promise.all([getBase(), getBalanceRows(today)]);
+  const [{ accounts, categories }, rows] = await Promise.all([getBase(), getBalanceRows(today)]);
 
   const balances = new Map<string, number>(accounts.map((a) => [a.id, a.initial_balance]));
   for (const r of rows) {
@@ -61,6 +62,14 @@ export default async function Contas() {
               <span className="text-xs text-muted">{ACCOUNT_KIND_LABEL[a.kind]}</span>
             </div>
             <b className="text-sm">{brl(balances.get(a.id) ?? 0)}</b>
+            <AdjustBalanceButton
+              accountId={a.id}
+              accountName={a.name}
+              initial={a.initial_balance}
+              paid={rows.filter((r) => r.paid && r.account_id === a.id).map((r) => [r.date, signed(r)])}
+              categories={categories}
+              today={today}
+            />
             <DeleteButton action={deleteAccount.bind(null, a.id)} label={`Apagar a conta ${a.name}`} />
           </div>
         ))}

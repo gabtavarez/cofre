@@ -164,3 +164,23 @@ create trigger investment_moves_owner_check before insert or update on public.in
   for each row execute function public.check_child_owner();
 
 grant select, insert, update, delete on public.goals, public.goal_moves, public.investments, public.investment_moves to authenticated;
+
+-- Renovação automática das fixas, meta ligada a investimento e dívidas --------
+alter table public.transactions add column if not exists auto_renew boolean not null default true;
+alter table public.goals add column if not exists investment_id uuid references public.investments(id) on delete set null;
+
+create table if not exists public.debts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  creditor text,
+  original_amount numeric(14,2) not null check (original_amount > 0),
+  current_balance numeric(14,2) not null check (current_balance >= 0),
+  monthly_rate numeric(6,3) not null default 0 check (monthly_rate >= 0),
+  monthly_payment numeric(14,2) not null default 0 check (monthly_payment >= 0),
+  created_at timestamptz not null default now()
+);
+alter table public.debts enable row level security;
+drop policy if exists "own rows" on public.debts;
+create policy "own rows" on public.debts for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on public.debts to authenticated;

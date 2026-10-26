@@ -111,23 +111,32 @@ export type Goal = {
   target_amount: number;
   target_date: string | null;
   saved: number;
+  investment_id: string | null;
+  investment_name: string | null;
 };
 
 export async function getGoals(): Promise<Goal[]> {
   const supabase = await createClient();
-  const [{ data: goals }, { data: moves }] = await Promise.all([
-    supabase.from("goals").select("id,name,target_amount,target_date").order("created_at"),
+  const [{ data: goals }, { data: moves }, { data: invs }] = await Promise.all([
+    supabase.from("goals").select("id,name,target_amount,target_date,investment_id").order("created_at"),
     supabase.from("goal_moves").select("goal_id,amount").limit(20000),
+    supabase.from("investments").select("id,name,current_value"),
   ]);
   const saved = new Map<string, number>();
   for (const m of moves ?? []) saved.set(m.goal_id, (saved.get(m.goal_id) ?? 0) + Number(m.amount));
-  return (goals ?? []).map((g) => ({
-    id: g.id,
-    name: g.name,
-    target_amount: Number(g.target_amount),
-    target_date: g.target_date,
-    saved: Math.round((saved.get(g.id) ?? 0) * 100) / 100,
-  }));
+  const invMap = new Map((invs ?? []).map((i) => [i.id, i]));
+  return (goals ?? []).map((g) => {
+    const inv = g.investment_id ? invMap.get(g.investment_id) : undefined;
+    return {
+      id: g.id,
+      name: g.name,
+      target_amount: Number(g.target_amount),
+      target_date: g.target_date,
+      saved: inv ? Number(inv.current_value) : Math.round((saved.get(g.id) ?? 0) * 100) / 100,
+      investment_id: inv ? inv.id : null,
+      investment_name: inv ? inv.name : null,
+    };
+  });
 }
 
 export type InvestmentKind = "renda_fixa" | "acoes" | "fiis" | "cripto" | "tesouro" | "outro";
@@ -162,5 +171,32 @@ export async function getInvestments(): Promise<Investment[]> {
     kind: i.kind as InvestmentKind,
     current_value: Number(i.current_value),
     invested: Math.round((invested.get(i.id) ?? 0) * 100) / 100,
+  }));
+}
+
+export type Debt = {
+  id: string;
+  name: string;
+  creditor: string | null;
+  original_amount: number;
+  current_balance: number;
+  monthly_rate: number; // % ao mês
+  monthly_payment: number;
+};
+
+export async function getDebts(): Promise<Debt[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("debts")
+    .select("id,name,creditor,original_amount,current_balance,monthly_rate,monthly_payment")
+    .order("created_at");
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    name: d.name,
+    creditor: d.creditor,
+    original_amount: Number(d.original_amount),
+    current_balance: Number(d.current_balance),
+    monthly_rate: Number(d.monthly_rate),
+    monthly_payment: Number(d.monthly_payment),
   }));
 }

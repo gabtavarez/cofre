@@ -172,6 +172,8 @@ export async function deleteTransaction(
         .eq("series_id", tx.series_id)
         .gte("date", tx.date);
       if (error) return fail(error.message);
+      // série encerrada: não renovar automaticamente
+      await supabase.from("transactions").update({ auto_renew: false }).eq("series_id", tx.series_id);
       revalidatePath("/", "layout");
       return { ok: true };
     }
@@ -340,7 +342,10 @@ export async function createGoal(fd: FormData): Promise<ActionResult> {
   if (!Number.isFinite(target) || target <= 0) return fail("Informe o valor da meta.");
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail("Data inválida.");
   const supabase = await createClient();
-  const { error } = await supabase.from("goals").insert({ name, target_amount: target, target_date: date });
+  const investmentId = str(fd, "investment_id") || null;
+  const { error } = await supabase
+    .from("goals")
+    .insert({ name, target_amount: target, target_date: date, investment_id: investmentId });
   if (error) return fail(error.message);
   revalidatePath("/metas");
   return { ok: true };
@@ -430,5 +435,66 @@ export async function setInvestmentValue(id: string, fd: FormData): Promise<Acti
   const { error } = await supabase.from("investments").update({ current_value: v }).eq("id", id);
   if (error) return fail(error.message);
   revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+/* ───────────── Dívidas ───────────── */
+
+export async function createDebt(fd: FormData): Promise<ActionResult> {
+  const name = str(fd, "name");
+  const creditor = str(fd, "creditor") || null;
+  const balance = parseBRL(str(fd, "balance"));
+  const rateRaw = str(fd, "monthly_rate");
+  const rate = rateRaw ? Number(rateRaw.replace(",", ".")) : 0;
+  const payRaw = str(fd, "monthly_payment");
+  const payment = payRaw ? parseBRL(payRaw) : 0;
+  if (!name) return fail("Dê um nome para a dívida.");
+  if (!Number.isFinite(balance) || balance <= 0) return fail("Informe quanto você deve hoje.");
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) return fail("Juros inválidos.");
+  if (!Number.isFinite(payment) || payment < 0) return fail("Parcela inválida.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("debts").insert({
+    name,
+    creditor,
+    original_amount: balance,
+    current_balance: balance,
+    monthly_rate: rate,
+    monthly_payment: payment,
+  });
+  if (error) return fail(error.message);
+  revalidatePath("/dividas");
+  return { ok: true };
+}
+
+export async function deleteDebt(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("debts").delete().eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/dividas");
+  return { ok: true };
+}
+
+/** Registra um pagamento: abate do saldo devedor. */
+export async function payDebt(id: string, fd: FormData): Promise<ActionResult> {
+  const v = parseBRL(str(fd, "amount"));
+  if (!Number.isFinite(v) || v <= 0) return fail("Informe um valor maior que zero.");
+  const supabase = await createClient();
+  const { data: d } = await supabase.from("debts").select("current_balance").eq("id", id).single();
+  if (!d) return fail("Dívida não encontrada.");
+  const next = Math.max(0, Math.round((Number(d.current_balance) - v) * 100) / 100);
+  const { error } = await supabase.from("debts").update({ current_balance: next }).eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/dividas");
+  return { ok: true };
+}
+
+/** Corrige o saldo devedor (por exemplo, depois que os juros do mês entraram). */
+export async function setDebtBalance(id: string, fd: FormData): Promise<ActionResult> {
+  const v = parseBRL(str(fd, "amount"));
+  if (!Number.isFinite(v) || v < 0) return fail("Valor inválido.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("debts").update({ current_balance: v }).eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/dividas");
   return { ok: true };
 }

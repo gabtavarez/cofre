@@ -2,6 +2,7 @@ import { QuickAdd } from "@/components/QuickAdd";
 import { Sidebar } from "@/components/Sidebar";
 import { getBase, getCategoryHints } from "@/lib/data";
 import { todayISO } from "@/lib/dates";
+import { renewSeries } from "@/lib/renew";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     supabase.auth.getClaims(),
     getBase(),
     getCategoryHints(),
+    renewSeries(supabase).catch(() => {}),
   ]);
   const email = typeof data?.claims?.email === "string" ? data.claims.email : "";
 

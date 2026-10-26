@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
+import { PrivacyToggle } from "@/components/PrivacyToggle";
 import { signOut } from "@/lib/actions";
 
 const NAV = [
@@ -14,6 +15,8 @@ const NAV = [
   { href: "/relatorios", label: "Relatórios", icon: "bars" },
   { href: "/metas", label: "Metas", icon: "target" },
   { href: "/investimentos", label: "Investimentos", icon: "trend" },
+  { href: "/dividas", label: "Dívidas", icon: "debt" },
+  { href: "/simulador", label: "Simulador", icon: "calc" },
 ] as const;
 
 export function Sidebar({ email }: { email: string }) {
@@ -21,8 +24,9 @@ export function Sidebar({ email }: { email: string }) {
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-6 border-b border-line bg-side px-4 py-5 md:sticky md:top-0 md:h-screen md:w-62 md:border-r md:border-b-0 md:px-5 md:py-7 md:gap-8">
-      <div className="px-2">
+      <div className="flex items-center justify-between px-2">
         <Logo />
+        <PrivacyToggle />
       </div>
 
       <nav className="flex gap-1 overflow-x-auto md:flex-col">

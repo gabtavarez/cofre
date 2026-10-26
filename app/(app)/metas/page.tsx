@@ -1,12 +1,12 @@
 import { ActionForm, DeleteButton, Field, fieldCls } from "@/components/forms";
 import { InlineMoney } from "@/components/InlineMoney";
 import { addGoalMove, createGoal, deleteGoal } from "@/lib/actions";
-import { getGoals } from "@/lib/data";
+import { getGoals, getInvestments } from "@/lib/data";
 import { daysBetween, todayISO } from "@/lib/dates";
 import { brl } from "@/lib/format";
 
 export default async function Metas() {
-  const goals = await getGoals();
+  const [goals, investments] = await Promise.all([getGoals(), getInvestments()]);
   const today = todayISO();
 
   return (
@@ -28,6 +28,18 @@ export default async function Metas() {
           <Field label="Até quando (opcional)" className="min-w-44">
             <input name="target_date" type="date" className={fieldCls} />
           </Field>
+          {investments.length > 0 && (
+            <Field label="Ligar a um investimento (opcional)" className="min-w-56">
+              <select name="investment_id" defaultValue="" className={fieldCls}>
+                <option value="">Não, guardar manualmente</option>
+                {investments.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </ActionForm>
       </section>
 
@@ -61,6 +73,7 @@ export default async function Metas() {
                   <b className="truncate text-base">{g.name}</b>
                   <span className="text-xs text-muted">
                     {g.target_date ? `Até ${g.target_date.split("-").reverse().join("/")}` : "Sem prazo"}
+                    {g.investment_name && <> · ligada a <b className="text-soft">{g.investment_name}</b></>}
                   </span>
                 </div>
                 <DeleteButton action={deleteGoal.bind(null, g.id)} label={`Apagar a meta ${g.name}`} />
@@ -87,10 +100,16 @@ export default async function Metas() {
                 {hint && <span className="text-xs font-semibold text-soft">{hint}</span>}
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                <InlineMoney action={addGoalMove.bind(null, g.id, false)} label="Guardar" />
-                <InlineMoney action={addGoalMove.bind(null, g.id, true)} label="Retirar" tone="muted" />
-              </div>
+              {g.investment_id ? (
+                <p className="text-xs text-muted">
+                  O valor acompanha o investimento. Para guardar mais, faça um aporte em Investimentos.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  <InlineMoney action={addGoalMove.bind(null, g.id, false)} label="Guardar" />
+                  <InlineMoney action={addGoalMove.bind(null, g.id, true)} label="Retirar" tone="muted" />
+                </div>
+              )}
             </article>
           );
         })}

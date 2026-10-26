@@ -17,6 +17,13 @@ export default async function Contas() {
   }
   const total = [...balances.values()].reduce((s, v) => s + v, 0);
 
+  const adjustAccounts = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    initial: a.initial_balance,
+    paid: rows.filter((r) => r.paid && r.account_id === a.id).map((r): [string, number] => [r.date, signed(r)]),
+  }));
+
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -63,10 +70,8 @@ export default async function Contas() {
             </div>
             <b className="text-sm">{brl(balances.get(a.id) ?? 0)}</b>
             <AdjustBalanceButton
-              accountId={a.id}
-              accountName={a.name}
-              initial={a.initial_balance}
-              paid={rows.filter((r) => r.paid && r.account_id === a.id).map((r) => [r.date, signed(r)])}
+              accounts={adjustAccounts}
+              defaultAccountId={a.id}
               categories={categories}
               today={today}
             />

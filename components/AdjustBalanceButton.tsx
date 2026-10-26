@@ -10,43 +10,63 @@ const field =
   "min-h-12 w-full rounded-xl border border-edge bg-side px-3.5 text-sm font-semibold text-text outline-none focus:border-accent";
 const label = "text-xs font-bold text-muted";
 
-type Props = {
-  accountId: string;
-  accountName: string;
+export type AdjustAccount = {
+  id: string;
+  name: string;
   initial: number;
   paid: [string, number][]; // [data, valor com sinal] dos lançamentos pagos da conta
-  categories: Category[];
-  today: string;
 };
 
-export function AdjustBalanceButton(props: Props) {
+type Props = {
+  accounts: AdjustAccount[];
+  defaultAccountId?: string;
+  categories: Category[];
+  today: string;
+  variant?: "row" | "primary";
+};
+
+export function AdjustBalanceButton({ variant = "row", ...props }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Ajustar saldo"
-        aria-label={`Ajustar saldo de ${props.accountName}`}
-        className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-muted hover:bg-raised hover:text-text"
-      >
-        <Icon name="edit" size={16} />
-        <span className="hidden sm:inline">Ajustar saldo</span>
-      </button>
+      {variant === "primary" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-[14px] border border-edge bg-raised px-5 text-sm font-extrabold text-text hover:brightness-125"
+        >
+          <Icon name="edit" size={18} />
+          Ajustar saldo
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title="Ajustar saldo"
+          aria-label="Ajustar saldo"
+          className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-muted hover:bg-raised hover:text-text"
+        >
+          <Icon name="edit" size={16} />
+          <span className="hidden sm:inline">Ajustar saldo</span>
+        </button>
+      )}
       {open && <Dialog {...props} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
 function Dialog({
-  accountId,
-  accountName,
-  initial,
-  paid,
+  accounts,
+  defaultAccountId,
   categories,
   today,
   onClose,
 }: Props & { onClose: () => void }) {
+  const [accountId, setAccountId] = useState(defaultAccountId ?? accounts[0]?.id ?? "");
+  const acc = accounts.find((a) => a.id === accountId) ?? accounts[0];
+  const accountName = acc?.name ?? "";
+  const initial = acc?.initial ?? 0;
+  const paid = acc?.paid ?? [];
   const [date, setDate] = useState(today);
   const [balance, setBalance] = useState("");
   const [debtor, setDebtor] = useState(false);
@@ -96,6 +116,18 @@ function Dialog({
         </div>
 
         <div className="flex flex-col gap-5 px-7 py-5">
+          {accounts.length > 1 && (
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Conta</span>
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className={field}>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1.5">
             <span className={label}>Atualizar saldo em</span>
             <input name="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={field} />

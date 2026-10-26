@@ -1,3 +1,4 @@
+import { AdjustBalanceButton } from "@/components/AdjustBalanceButton";
 import { MonthNav } from "@/components/MonthNav";
 import { NewTransactionButton } from "@/components/TransactionDialog";
 import { TxRow, type TxRowData } from "@/components/TxRow";
@@ -19,7 +20,7 @@ export default async function Lancamentos({
   const [{ accounts, categories }, txs, rows, hints] = await Promise.all([
     getBase(),
     getTransactionsBetween(start, end),
-    getBalanceRows(end),
+    getBalanceRows(end > today ? end : today),
     getCategoryHints(),
   ]);
 
@@ -91,6 +92,17 @@ export default async function Lancamentos({
         <h1 className="text-3xl font-extrabold tracking-tight">Lançamentos</h1>
         <div className="flex flex-wrap items-center gap-3">
           <MonthNav month={month} basePath="/lancamentos" />
+          <AdjustBalanceButton
+            variant="primary"
+            accounts={accounts.map((a) => ({
+              id: a.id,
+              name: a.name,
+              initial: a.initial_balance,
+              paid: rows.filter((r) => r.paid && r.account_id === a.id).map((r): [string, number] => [r.date, signed(r)]),
+            }))}
+            categories={categories}
+            today={today}
+          />
           <NewTransactionButton accounts={accounts} categories={categories} today={today} hints={hints} />
         </div>
       </header>

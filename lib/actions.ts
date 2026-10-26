@@ -498,3 +498,121 @@ export async function setDebtBalance(id: string, fd: FormData): Promise<ActionRe
   revalidatePath("/dividas");
   return { ok: true };
 }
+
+/* ───────────── Importar extrato ───────────── */
+
+export type ImportRow = { date: string; description: string; amount: number; externalId: string; categoryId: string | null };
+
+/** Marca o que já existe: "dup" = já importado; "maybe" = mesma data/valor/tipo já lançado à mão. */
+export async function checkImport(
+  accountId: string,
+  rows: { date: string; amount: number; externalId: string }[],
+): Promise<Record<string, "dup" | "maybe">> {
+  if (!accountId || rows.length === 0 || rows.length > 5000) return {};
+  const supabase = await createClient();
+  const dates = rows.map((r) => r.date).sort();
+  const { data } = await supabase
+    .from("transactions")
+    .select("date,amount,kind,external_id")
+    .eq("account_id", accountId)
+    .gte("date", dates[0])
+    .lte("date", dates[dates.length - 1])
+    .limit(20000);
+  const ids = new Set((data ?? []).map((t) => t.external_id).filter(Boolean));
+  const manual = new Map<string, number>();
+  for (const t of data ?? []) {
+    if (t.external_id) continue;
+    const key = `${t.date}|${t.kind === "income" ? "" : "-"}${Number(t.amount).toFixed(2)}`;
+    manual.set(key, (manual.get(key) ?? 0) + 1);
+  }
+  const out: Record<string, "dup" | "maybe"> = {};
+  for (const r of rows) {
+    if (ids.has(r.externalId)) out[r.externalId] = "dup";
+    else {
+      const key = `${r.date}|${r.amount < 0 ? "-" : ""}${Math.abs(r.amount).toFixed(2)}`;
+      const left = manual.get(key) ?? 0;
+      if (left > 0) {
+        out[r.externalId] = "maybe";
+        manual.set(key, left - 1);
+      }
+    }
+  }
+  return out;
+}
+
+export async function importTransactions(
+  accountId: string,
+  rows: ImportRow[],
+): Promise<{ ok: true; imported: number; skipped: number } | { ok: false; error: string }> {
+  if (!accountId) return { ok: false, error: "Escolha a conta." };
+  if (rows.length === 0) return { ok: false, error: "Nenhum lançamento selecionado." };
+  if (rows.length > 2000) return { ok: false, error: "Importe no máximo 2000 lançamentos por vez." };
+
+  const payload = [];
+  for (const r of rows) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date) || !Number.isFinite(r.amount) || r.amount === 0 || !r.externalId) {
+      return { ok: false, error: "Há linhas inválidas no arquivo." };
+    }
+    payload.push({
+      account_id: accountId,
+      category_id: r.categoryId || null,
+      kind: r.amount > 0 ? "income" : "expense",
+      description: r.description.slice(0, 200) || "Sem descrição",
+      amount: Math.abs(Math.round(r.amount * 100) / 100),
+      date: r.date,
+      paid: true,
+      repeat: "none",
+      external_id: r.externalId,
+    });
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .upsert(payload, { onConflict: "account_id,external_id", ignoreDuplicates: true })
+    .select("id");
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  const imported = data?.length ?? 0;
+  return { ok: true, imported, skipped: payload.length - imported };
+}
+
+/* ───────────── Compartilhar ───────────── */
+
+export async function inviteMember(fd: FormData): Promise<ActionResult> {
+  const email = String(fd.get("email") ?? "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail("Digite um e-mail válido.");
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const me = data?.claims;
+  if (!me?.sub) return fail("Sessão expirada.");
+  if (email === String(me.email ?? "").toLowerCase()) return fail("Esse é o seu próprio e-mail.");
+  const { error } = await supabase
+    .from("household_members")
+    .insert({ owner_id: me.sub, owner_email: me.email, email, status: "pending" });
+  if (error) return fail(error.message);
+  revalidatePath("/compartilhar");
+  return { ok: true };
+}
+
+export async function acceptInvite(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) return fail("Sessão expirada.");
+  const { error } = await supabase
+    .from("household_members")
+    .update({ status: "accepted", member_id: data.claims.sub })
+    .eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeMember(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("household_members").delete().eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

@@ -80,6 +80,9 @@ export default async function Dashboard({
 
   const saved = sum.income > 0 ? Math.round((sum.result / sum.income) * 100) : null;
   const monthIsCurrent = month === today.slice(0, 7);
+  // saldo projetado do fim do mês dividido pelos dias que faltam (contando hoje)
+  const daysLeft = Math.max(1, monthBounds(month).days - Number(today.slice(8, 10)) + 1);
+  const perDay = round2(series.endBalance / daysLeft);
 
   return (
     <>
@@ -114,6 +117,13 @@ export default async function Dashboard({
           <span className="text-xs font-semibold">
             Projetado p/ fim do mês: <b>{brl(series.endBalance)}</b>
           </span>
+          {monthIsCurrent && (
+            <span className="mt-1 rounded-xl bg-ink/10 px-3 py-2 text-xs font-bold">
+              {perDay > 0
+                ? `Livre para gastar: ${brl(perDay)} por dia`
+                : "Mês no vermelho: as contas a pagar passam do saldo"}
+            </span>
+          )}
         </div>
         <div className={`${card} flex min-w-55 flex-1 flex-col gap-2.5`}>
           <span className="text-[13px] font-semibold text-muted">Receitas do mês</span>

@@ -2,7 +2,7 @@ import { MonthlyBars, type BarMonth } from "@/components/charts";
 import { getTransactionsBetween } from "@/lib/data";
 import { monthBounds, monthLabel, monthShort, resolveMonth, shiftMonth } from "@/lib/dates";
 import { MonthNav } from "@/components/MonthNav";
-import { brl } from "@/lib/format";
+import { brl, normalizeDesc } from "@/lib/format";
 import { round2, summarize } from "@/lib/finance";
 
 const card = "min-w-0 rounded-[20px] border border-line bg-surface p-5.5";
@@ -67,6 +67,37 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
   const catMax = Math.max(1, ...cats.flatMap((c) => [...c.row.values()]));
+
+  // assinaturas / gastos recorrentes: fixas, ou a mesma despesa em 3+ meses com valor parecido
+  const groups = new Map<string, { name: string; months: Set<string>; amounts: number[]; fixed: boolean; lastDate: string }>();
+  for (const t of txs) {
+    if (t.kind !== "expense" || t.repeat === "installment" || t.description === "Ajuste de saldo") continue;
+    const key = normalizeDesc(t.description);
+    if (!key) continue;
+    const g = groups.get(key) ?? { name: t.description, months: new Set<string>(), amounts: [], fixed: false, lastDate: "" };
+    g.months.add(t.date.slice(0, 7));
+    g.amounts.push(t.amount);
+    if (t.repeat === "fixed" || t.repeat === "yearly") g.fixed = true;
+    if (t.date >= g.lastDate) {
+      g.lastDate = t.date;
+      g.name = t.description;
+    }
+    groups.set(key, g);
+  }
+  const subs = [...groups.values()]
+    .filter((g) => {
+      if (g.fixed) return true;
+      if (g.months.size < 3) return false;
+      const min = Math.min(...g.amounts);
+      const max = Math.max(...g.amounts);
+      return max <= min * 1.15;
+    })
+    .map((g) => {
+      const monthly = round2(g.amounts.reduce((s, v) => s + v, 0) / g.amounts.length);
+      return { name: g.name, monthly, yearly: round2(monthly * 12), fixed: g.fixed };
+    })
+    .sort((a, b) => b.monthly - a.monthly);
+  const subsMonthly = round2(subs.reduce((s, x) => s + x.monthly, 0));
 
   return (
     <>
@@ -142,6 +173,31 @@ export default async function Relatorios({ searchParams }: { searchParams: Promi
             })}
           </tbody>
         </table>
+      </section>
+
+      <section className={card}>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-bold">Assinaturas e gastos recorrentes</h2>
+          {subs.length > 0 && (
+            <span className="text-xs text-muted">
+              Total <b className="text-text">{brl(subsMonthly)}</b> por mês · <b className="text-text">{brl(round2(subsMonthly * 12))}</b> por ano
+            </span>
+          )}
+        </div>
+        {subs.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted">
+            Nada recorrente detectado ainda. Lançamentos fixos e despesas que se repetem todo mês aparecem aqui.
+          </p>
+        ) : (
+          subs.map((x, i) => (
+            <div key={x.name} className={`flex items-center gap-4 py-3 ${i > 0 ? "border-t border-line" : ""}`}>
+              <b className="min-w-0 flex-1 truncate text-sm">{x.name}</b>
+              <span className="hidden text-xs text-muted sm:block">{x.fixed ? "Fixa" : "Detectada"}</span>
+              <span className="w-28 text-right text-sm text-expense-text">{brl(x.monthly)}<span className="text-xs text-muted">/mês</span></span>
+              <span className="hidden w-32 text-right text-xs text-muted md:block">{brl(x.yearly)} por ano</span>
+            </div>
+          ))
+        )}
       </section>
 
       <section className={`${card} overflow-x-auto`}>

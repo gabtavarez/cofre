@@ -184,3 +184,9 @@ alter table public.debts enable row level security;
 drop policy if exists "own rows" on public.debts;
 create policy "own rows" on public.debts for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 grant select, insert, update, delete on public.debts to authenticated;
+
+-- ===== Importação, compartilhamento e patrimônio =====
+alter table public.transactions add column if not exists external_id text;
+create unique index if not exists transactions_account_external_idx on public.transactions (account_id, external_id);
+-- household_members, data_owner() e net_worth_snapshots: veja as migrations aplicadas no projeto Supabase
+-- (todas as tabelas de dados usam user_id default data_owner() e policy user_id = data_owner()).

@@ -13,10 +13,13 @@ const NAV = [
   { href: "/contas", label: "Contas", icon: "wallet" },
   { href: "/categorias", label: "Categorias e limites", icon: "pie" },
   { href: "/relatorios", label: "Relatórios", icon: "bars" },
+  { href: "/patrimonio", label: "Patrimônio", icon: "pie" },
   { href: "/metas", label: "Metas", icon: "target" },
   { href: "/investimentos", label: "Investimentos", icon: "trend" },
   { href: "/dividas", label: "Dívidas", icon: "debt" },
   { href: "/simulador", label: "Simulador", icon: "calc" },
+  { href: "/importar", label: "Importar extrato", icon: "plus" },
+  { href: "/compartilhar", label: "Compartilhar", icon: "wallet" },
 ] as const;
 
 export function Sidebar({ email }: { email: string }) {

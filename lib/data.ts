@@ -200,3 +200,44 @@ export async function getDebts(): Promise<Debt[]> {
     monthly_payment: Number(d.monthly_payment),
   }));
 }
+
+export type NetWorth = { accounts: number; investments: number; debts: number; net: number };
+
+export async function getNetWorth(today: string): Promise<NetWorth> {
+  const supabase = await createClient();
+  const [{ accounts }, rows, { data: invs }, { data: debts }] = await Promise.all([
+    getBase(),
+    getBalanceRows(today),
+    supabase.from("investments").select("current_value"),
+    supabase.from("debts").select("current_balance"),
+  ]);
+  const initial = accounts.reduce((s, a) => s + a.initial_balance, 0);
+  const acc = rows.reduce((s, r) => (r.paid ? s + (r.kind === "income" ? r.amount : -r.amount) : s), initial);
+  const inv = (invs ?? []).reduce((s, i) => s + Number(i.current_value), 0);
+  const debt = (debts ?? []).reduce((s, d) => s + Number(d.current_balance), 0);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return { accounts: r2(acc), investments: r2(inv), debts: r2(debt), net: r2(acc + inv - debt) };
+}
+
+export type Snapshot = { month: string; accounts: number; investments: number; debts: number };
+
+/** Grava (ou atualiza) o retrato do patrimônio do mês e devolve o histórico. */
+export async function recordAndGetSnapshots(month: string, nw: NetWorth): Promise<Snapshot[]> {
+  const supabase = await createClient();
+  await supabase
+    .from("net_worth_snapshots")
+    .upsert(
+      { month, accounts: nw.accounts, investments: nw.investments, debts: nw.debts },
+      { onConflict: "user_id,month" },
+    );
+  const { data } = await supabase
+    .from("net_worth_snapshots")
+    .select("month,accounts,investments,debts")
+    .order("month");
+  return (data ?? []).map((r) => ({
+    month: r.month,
+    accounts: Number(r.accounts),
+    investments: Number(r.investments),
+    debts: Number(r.debts),
+  }));
+}

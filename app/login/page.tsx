@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Logo } from "@/components/Logo";
 import { signIn, signUp } from "@/lib/actions";
+import { createClient } from "@/lib/supabase/client";
 
 const field =
   "min-h-12 w-full rounded-xl border border-edge bg-side px-3.5 text-sm font-semibold text-text outline-none focus:border-accent";
@@ -11,6 +12,18 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  async function oauth(provider: "google" | "azure") {
+    setError(null);
+    const { error } = await createClient().auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+        ...(provider === "azure" ? { scopes: "email" } : {}),
+      },
+    });
+    if (error) setError(error.message);
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-5 py-10">
@@ -27,6 +40,22 @@ export default function LoginPage() {
         <Logo size={40} textClass="text-2xl" />
 
         <h1 className="text-lg font-bold">{mode === "in" ? "Entrar" : "Criar conta"}</h1>
+
+        <div className="flex flex-col gap-2.5">
+          {([["google", "Continuar com Google (Gmail)"], ["azure", "Continuar com Microsoft (Hotmail/Outlook)"]] as const).map(([p, label]) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => oauth(p)}
+              className="min-h-12 cursor-pointer rounded-xl border border-edge bg-side text-sm font-bold text-text hover:border-accent"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted">
+          <span className="h-px flex-1 bg-line" /> ou com e-mail <span className="h-px flex-1 bg-line" />
+        </div>
 
         <label className="flex flex-col gap-1.5">
           <span className="text-xs font-bold text-muted">E-mail</span>

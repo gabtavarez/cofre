@@ -16,6 +16,8 @@ export default function Simulador() {
   const [per, setPer] = useState<"year" | "month">("year");
   const [years, setYears] = useState("10");
   const [goal, setGoal] = useState("");
+  const [income, setIncome] = useState("10.000,00");
+  const [incomeRate, setIncomeRate] = useState("8");
 
   const sim = useMemo(() => {
     const p0 = num(initial);
@@ -41,8 +43,21 @@ export default function Simulador() {
       const factor = i === 0 ? n : (growth - 1) / i;
       need = Math.max(0, (g - fvInitial) / factor);
     }
-    return { points, last, n, i, need };
-  }, [initial, monthly, rate, per, years, goal]);
+
+    // renda mensal desejada: patrimônio que rende X por mês sem gastar o principal
+    const inc = num(income, NaN);
+    const ir = Number(incomeRate.replace(",", ".")) / 100;
+    const im = Number.isFinite(ir) && ir > 0 ? Math.pow(1 + ir, 1 / 12) - 1 : 0;
+    let rent: { capital: number; monthly: number; fromInitial: number } | null = null;
+    if (Number.isFinite(inc) && inc > 0 && im > 0) {
+      const capital = inc / im;
+      const growth = Math.pow(1 + i, n);
+      const fromInitial = p0 * growth;
+      const factor = i === 0 ? n : (growth - 1) / i;
+      rent = { capital, fromInitial, monthly: Math.max(0, (capital - fromInitial) / factor) };
+    }
+    return { points, last, n, i, need, rent };
+  }, [initial, monthly, rate, per, years, goal, income, incomeRate]);
 
   const { points, last } = sim;
   const profit = last.total - last.invested;
@@ -136,6 +151,43 @@ export default function Simulador() {
             </p>
           )}
         </div>
+      </section>
+
+      <section className="rounded-[20px] border border-line bg-surface p-5.5">
+        <h2 className="mb-1 text-base font-bold">Quanto investir para viver de renda?</h2>
+        <p className="mb-4 text-xs text-muted">
+          Informe a renda mensal que você quer receber só com os rendimentos (sem gastar o patrimônio). Usa o valor inicial, a rentabilidade e o prazo acima para a fase de acumulação.
+        </p>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="flex min-w-48 flex-col gap-1.5">
+            <span className="text-xs font-bold text-muted">Renda mensal desejada (R$)</span>
+            <input inputMode="decimal" value={income} onChange={(e) => setIncome(e.target.value)} className={fieldCls} />
+          </label>
+          <label className="flex min-w-48 flex-col gap-1.5">
+            <span className="text-xs font-bold text-muted">Rentabilidade depois (% ao ano)</span>
+            <input inputMode="decimal" value={incomeRate} onChange={(e) => setIncomeRate(e.target.value)} className={fieldCls} />
+          </label>
+        </div>
+        {sim.rent && (
+          <div className="mt-5 flex flex-wrap gap-4">
+            <div className="flex min-w-55 flex-1 flex-col gap-1.5 rounded-2xl bg-accent-bg p-4">
+              <span className="text-xs font-bold text-muted">Patrimônio necessário</span>
+              <b className="font-display text-2xl text-accent-soft">{brl(Math.ceil(sim.rent.capital))}</b>
+              <span className="text-xs text-muted">rendendo {incomeRate}% ao ano</span>
+            </div>
+            <div className="flex min-w-55 flex-1 flex-col gap-1.5 rounded-2xl bg-raised p-4">
+              <span className="text-xs font-bold text-muted">Aporte mensal necessário</span>
+              <b className="font-display text-2xl">{brl(Math.ceil(sim.rent.monthly * 100) / 100)}</b>
+              <span className="text-xs text-muted">por {sim.n / 12} {sim.n / 12 === 1 ? "ano" : "anos"}</span>
+            </div>
+            <p className="w-full text-xs text-muted">
+              {sim.rent.monthly === 0
+                ? "Seu valor inicial já chega lá no prazo, sem novos aportes. "
+                : ""}
+              Dica: use uma rentabilidade perto do que passa a inflação (rendimento “real”) para o valor de hoje não perder poder de compra.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="overflow-x-auto rounded-[20px] border border-line bg-surface p-5.5">

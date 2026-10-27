@@ -17,6 +17,7 @@ const NAV = [
   { href: "/metas", label: "Metas", icon: "target" },
   { href: "/investimentos", label: "Investimentos", icon: "trend" },
   { href: "/dividas", label: "Dívidas", icon: "debt" },
+  { href: "/aprender", label: "Aprender a investir", icon: "target" },
   { href: "/simulador", label: "Simulador", icon: "calc" },
   { href: "/importar", label: "Importar extrato", icon: "plus" },
   { href: "/compartilhar", label: "Compartilhar", icon: "wallet" },

@@ -9,6 +9,7 @@ export type Facts = {
   balance: number;
   avgExpense: number;
   avgIncome: number;
+  months: number;
   liquidInvested: number;
   totalInvested: number;
   debts: { name: string; balance: number; rate: number }[];
@@ -81,11 +82,11 @@ export function LearnClient({ facts }: { facts: Facts }) {
       status: plan.surplus > 0 ? "ok" : "todo",
       body:
         facts.avgIncome === 0 && facts.avgExpense === 0 ? (
-          <>Ainda não há histórico dos últimos 3 meses. Registre suas receitas e despesas em Lançamentos para eu calcular sua sobra mensal.</>
+          <>Ainda não há lançamentos para calcular. Registre suas receitas e despesas em Lançamentos para eu calcular sua sobra mensal.</>
         ) : plan.surplus > 0 ? (
-          <>Nos últimos 3 meses você ganhou em média <b>{brl(facts.avgIncome)}</b> e gastou <b>{brl(facts.avgExpense)}</b>. Sobram cerca de <b>{brl(plan.surplus)}</b> por mês, e é daqui que sai o seu investimento.</>
+          <>Considerando {facts.months} {facts.months === 1 ? "mês" : "meses"} com lançamentos (passados e futuros), você ganha em média <b>{brl(facts.avgIncome)}</b> e gasta <b>{brl(facts.avgExpense)}</b>. Sobram cerca de <b>{brl(plan.surplus)}</b> por mês, e é daqui que sai o seu investimento.</>
         ) : (
-          <>Você gasta em média <b>{brl(facts.avgExpense)}</b> e ganha <b>{brl(facts.avgIncome)}</b>. Antes de investir, o caminho é reduzir despesas ou aumentar a renda. Veja o relatório de Categorias para achar onde cortar.</>
+          <>Pela média de {facts.months} {facts.months === 1 ? "mês" : "meses"} com lançamentos, você gasta <b>{brl(facts.avgExpense)}</b> e ganha <b>{brl(facts.avgIncome)}</b> por mês. Antes de investir, o caminho é reduzir despesas ou aumentar a renda. Veja o relatório de Categorias para achar onde cortar.</>
         ),
     },
     {

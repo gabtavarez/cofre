@@ -117,7 +117,7 @@ export function TransactionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#050810]/80 px-5 py-10"
+      className="anim-pop anim-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#050810]/80 px-5 py-10"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <form

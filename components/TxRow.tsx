@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { Icon } from "@/components/icons";
 import { deleteTransaction, setPaid } from "@/lib/actions";
 import { TransactionDialog, type EditTarget } from "@/components/TransactionDialog";
@@ -37,40 +37,45 @@ export function TxRow({
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [paid, setOptPaid] = useOptimistic(t.paid);
 
-  const status = t.paid ? "paid" : t.late ? "late" : "sched";
+  const status = paid ? "paid" : t.late ? "late" : "sched";
   const statusColor = status === "paid" ? "text-income" : status === "late" ? "text-expense" : "text-warn";
-  const statusLabel = t.paid
+  const statusLabel = paid
     ? t.kind === "income" ? "Recebido" : "Pago"
     : t.late ? "Atrasado" : "Agendado";
-  const actionLabel = t.paid
+  const actionLabel = paid
     ? "Marcar como não pago"
     : t.kind === "income" ? "Marcar como recebido" : "Marcar como pago";
 
   function toggle() {
     setError(null);
     startTransition(async () => {
-      const res = await setPaid(t.id, !t.paid);
+      setOptPaid(!paid);
+      const res = await setPaid(t.id, !paid);
       if (!res.ok) setError(res.error);
     });
   }
 
   function remove(scope: "one" | "future") {
     setError(null);
+    setRemoving(true);
     startTransition(async () => {
       const res = await deleteTransaction(t.id, scope);
-      if (!res.ok) setError(res.error);
-      else setConfirming(false);
+      if (!res.ok) {
+        setError(res.error);
+        setRemoving(false);
+      } else setConfirming(false);
     });
   }
 
   return (
-    <div className={`border-t border-line ${pending ? "opacity-60" : ""}`}>
+    <div className={`border-t border-line transition-all duration-300 ${removing ? "scale-[0.98] opacity-40" : ""}`}>
       <div className="flex min-h-14 items-center gap-4 px-5">
         <button
           type="button"
           onClick={toggle}
-          disabled={pending}
           title={`${statusLabel} · ${actionLabel}`}
           aria-label={`${statusLabel}. ${actionLabel}`}
           className={`flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-raised ${statusColor}`}

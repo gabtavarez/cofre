@@ -234,7 +234,7 @@ export default async function Lancamentos({
         <div className="overflow-x-auto">
           <div className="min-w-160">
             {groups.map((g) => (
-              <div key={g.date}>
+              <div key={g.date} className="cv-auto">
                 <div className="flex items-center justify-between border-t border-line bg-side px-5 py-2.5 text-xs font-bold">
                   <span className={g.date === today ? "text-accent-soft" : g.date < today ? "text-muted" : "text-soft"}>
                     {searchAll ? g.date.split("-").reverse().join("/") + " · " : ""}{dayHeading(g.date)}

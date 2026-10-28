@@ -616,3 +616,28 @@ export async function removeMember(id: string): Promise<ActionResult> {
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/* ───────────── Gasto sem remorso ───────────── */
+
+export async function saveFreeSettings(
+  savingsPct: number,
+  bufferPct: number,
+  categoryIds: string[],
+): Promise<ActionResult> {
+  if (!Number.isFinite(savingsPct) || savingsPct < 0 || savingsPct > 90) return fail("Poupança deve ficar entre 0% e 90%.");
+  if (!Number.isFinite(bufferPct) || bufferPct < 0 || bufferPct > 50) return fail("Colchão deve ficar entre 0% e 50%.");
+  if (categoryIds.length > 100) return fail("Categorias demais.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("free_spend_settings").upsert(
+    {
+      savings_pct: savingsPct,
+      buffer_pct: bufferPct,
+      category_ids: categoryIds,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+  if (error) return fail(error.message);
+  revalidatePath("/sem-remorso");
+  return { ok: true };
+}

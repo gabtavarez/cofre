@@ -14,6 +14,7 @@ const NAV = [
   { href: "/categorias", label: "Categorias e limites", icon: "pie" },
   { href: "/relatorios", label: "Relatórios", icon: "bars" },
   { href: "/patrimonio", label: "Patrimônio", icon: "pie" },
+  { href: "/sem-remorso", label: "Gasto sem remorso", icon: "eye" },
   { href: "/metas", label: "Metas", icon: "target" },
   { href: "/investimentos", label: "Investimentos", icon: "trend" },
   { href: "/dividas", label: "Dívidas", icon: "debt" },

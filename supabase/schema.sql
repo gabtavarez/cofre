@@ -190,3 +190,17 @@ alter table public.transactions add column if not exists external_id text;
 create unique index if not exists transactions_account_external_idx on public.transactions (account_id, external_id);
 -- household_members, data_owner() e net_worth_snapshots: veja as migrations aplicadas no projeto Supabase
 -- (todas as tabelas de dados usam user_id default data_owner() e policy user_id = data_owner()).
+
+-- Gasto sem remorso: regras por usuário (compartilhadas via data_owner())
+create table if not exists public.free_spend_settings (
+  user_id uuid primary key default public.data_owner() references auth.users(id) on delete cascade,
+  savings_pct numeric(5,2) not null default 20 check (savings_pct >= 0 and savings_pct <= 90),
+  buffer_pct numeric(5,2) not null default 10 check (buffer_pct >= 0 and buffer_pct <= 50),
+  category_ids uuid[] not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table public.free_spend_settings enable row level security;
+create policy "fss select" on public.free_spend_settings for select using (user_id = public.data_owner());
+create policy "fss insert" on public.free_spend_settings for insert with check (user_id = public.data_owner());
+create policy "fss update" on public.free_spend_settings for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
+create policy "fss delete" on public.free_spend_settings for delete using (user_id = public.data_owner());

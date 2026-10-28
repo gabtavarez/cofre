@@ -183,6 +183,8 @@ export default async function Lancamentos({
           <span>Exportar para Excel:</span>
           <a className="font-bold text-accent-soft hover:underline" href={`/api/export?m=${month}`} download>Este mês (CSV)</a>
           <a className="font-bold text-accent-soft hover:underline" href="/api/export" download>Tudo (CSV)</a>
+          <span className="hidden text-line sm:inline">|</span>
+          <a className="font-bold text-accent-soft hover:underline" href="/importar">Importar extrato do banco</a>
         </div>
       </form>
 

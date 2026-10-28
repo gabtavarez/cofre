@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar email={email} />
-      <main className="app-main flex min-w-0 flex-1 flex-col gap-6 px-5 py-7 md:px-9 md:pb-12">{children}</main>
+      <main className="app-main flex min-w-0 flex-1 flex-col gap-6 px-5 py-6 pb-28 md:px-9 md:py-7 md:pb-12">{children}</main>
       <Suspense fallback={null}>
         <QuickAddLoader />
       </Suspense>

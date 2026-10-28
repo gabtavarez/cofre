@@ -38,7 +38,7 @@ export function QuickAdd({
         onClick={() => setOpen(true)}
         aria-label="Novo lançamento (atalho: N)"
         title="Novo lançamento (N)"
-        className="fixed right-5 bottom-5 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-accent text-ink shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:brightness-110 md:hidden"
+        className="fixed right-5 bottom-22 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-accent text-ink shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:brightness-110 md:hidden"
       >
         <Icon name="plus" size={26} stroke={2.8} />
       </button>

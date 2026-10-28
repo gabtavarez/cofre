@@ -94,6 +94,23 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="7.5" cy="8.5" r="1.2" />
     </>
   ),
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.3c1.8.6 3 2.2 3.3 4.7" />
+    </>
+  ),
+  upload: <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />,
+  layers: <path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />,
+  book: <path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h10" />,
+  chevron: <path d="M6 9l6 6 6-6" />,
   logo: (
     <>
       <circle cx="12" cy="12" r="8" />

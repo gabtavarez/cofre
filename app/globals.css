@@ -75,7 +75,8 @@ h1,
 
 /* cada tela entra com as seções em cascata (o esqueleto de carregamento não anima) */
 .app-main > :not([aria-busy]) {
-  animation: fade-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* "backwards": ao terminar, não deixa transform preso (isso quebrava diálogos position:fixed dentro da seção) */
+  animation: fade-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 .app-main > :nth-child(2) { animation-delay: 0.04s; }
 .app-main > :nth-child(3) { animation-delay: 0.08s; }
@@ -83,8 +84,8 @@ h1,
 .app-main > :nth-child(5) { animation-delay: 0.16s; }
 .app-main > :nth-child(n + 6) { animation-delay: 0.2s; }
 
-.anim-backdrop { animation: fade-in 0.18s ease-out both; }
-.anim-pop { animation: pop-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-backdrop { animation: fade-in 0.18s ease-out backwards; }
+.anim-pop { animation: pop-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 
 /* toque suave em tudo que é clicável */
 button,

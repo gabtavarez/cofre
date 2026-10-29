@@ -71,7 +71,7 @@ export function TxRow({
   }
 
   return (
-    <div className={`border-t border-line transition-all duration-300 ${removing ? "scale-[0.98] opacity-40" : ""}`}>
+    <div className={`row-hover border-t border-line transition-all duration-300 ${removing ? "scale-[0.98] opacity-40" : ""}`}>
       <div className="flex min-h-14 items-center gap-4 px-5">
         <button
           type="button"

@@ -105,6 +105,61 @@ a[class*="rounded"]:active {
   transform: scale(0.97);
 }
 
+
+/* efeitos ao passar o mouse: só transform/opacity/sombra, sem custo de layout */
+svg[aria-label="Mymony"] {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  outline: none;
+}
+.app-main [class*="rounded-[20px]"],
+.row-hover {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  /* logo balança */
+  a:hover > svg[aria-label="Mymony"],
+  span:hover > svg[aria-label="Mymony"] {
+    transform: rotate(-8deg) scale(1.08);
+  }
+  /* cartões acendem a borda (sem transform, para não prender diálogos) */
+  .app-main [class*="rounded-[20px]"]:not([class*="bg-accent"]):not([class*="bg-warn"]):not([class*="bg-expense"]):hover {
+    border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+    box-shadow: 0 8px 28px -12px color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
+  /* linhas de lançamento: faixa lateral + leve tom */
+  .row-hover:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 4%, transparent);
+    box-shadow: inset 3px 0 0 var(--color-accent);
+  }
+  /* botões e links de destaque: sobem e brilham */
+  button[class*="bg-accent"]:not(:disabled):not(:active):hover,
+  a[class*="bg-accent"]:not([aria-current]):not(:active):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  }
+  /* menu lateral: ícone dá um pulinho e o texto desliza */
+  aside nav a:not([aria-current]) svg {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+  }
+  aside nav a:not([aria-current]):hover svg {
+    transform: scale(1.18) rotate(-6deg);
+    color: var(--color-accent);
+  }
+  /* botões neutros: leve elevação */
+  button[class*="border"]:not([class*="bg-accent"]):not(:disabled):not(:active):hover {
+    transform: translateY(-1px);
+  }
+}
+
 /* listas longas: só desenha o que está na tela */
 .cv-auto {
   content-visibility: auto;

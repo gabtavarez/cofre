@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { addMonths } from "@/lib/dates";
+import { addDays, addMonths, todayISO } from "@/lib/dates";
 import { parseBRL, splitInstallments } from "@/lib/format";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -639,5 +639,60 @@ export async function saveFreeSettings(
   );
   if (error) return fail(error.message);
   revalidatePath("/sem-remorso");
+  return { ok: true };
+}
+
+/* ───────────── Lista de desejos ───────────── */
+
+export async function addWish(fd: FormData): Promise<ActionResult> {
+  const name = str(fd, "name");
+  const price = parseBRL(str(fd, "price"));
+  const priority = Number(str(fd, "priority")) || 2;
+  const url = str(fd, "url");
+  const wait = fd.get("wait") === "on";
+  if (!name) return fail("Dê um nome ao item.");
+  if (!Number.isFinite(price) || price <= 0) return fail("Informe um preço válido.");
+  if (![1, 2, 3].includes(priority)) return fail("Prioridade inválida.");
+  if (url && !/^https?:\/\//i.test(url)) return fail("O link deve começar com http:// ou https://");
+  const supabase = await createClient();
+  const wait_until = wait ? addDays(todayISO(), 7) : null;
+  const { error } = await supabase
+    .from("wishlist_items")
+    .insert({ name: name.slice(0, 120), price, priority, url: url || null, wait_until });
+  if (error) return fail(error.message);
+  revalidatePath("/desejos");
+  return { ok: true };
+}
+
+export async function deleteWish(id: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("wishlist_items").delete().eq("id", id);
+  if (error) return fail(error.message);
+  revalidatePath("/desejos");
+  return { ok: true };
+}
+
+export async function buyWish(id: string, accountId: string, categoryId: string | null, amount: number): Promise<ActionResult> {
+  if (!accountId) return fail("Escolha a conta.");
+  if (!Number.isFinite(amount) || amount <= 0) return fail("Informe o valor pago.");
+  const supabase = await createClient();
+  const { data: item, error: e1 } = await supabase.from("wishlist_items").select("name,bought_at").eq("id", id).single();
+  if (e1 || !item) return fail("Item não encontrado.");
+  if (item.bought_at) return fail("Esse item já foi marcado como comprado.");
+  const today = todayISO();
+  const { error: e2 } = await supabase.from("transactions").insert({
+    account_id: accountId,
+    category_id: categoryId || null,
+    kind: "expense",
+    description: item.name,
+    amount: Math.round(amount * 100) / 100,
+    date: today,
+    paid: true,
+    repeat: "none",
+  });
+  if (e2) return fail(e2.message);
+  const { error: e3 } = await supabase.from("wishlist_items").update({ bought_at: today }).eq("id", id);
+  if (e3) return fail(e3.message);
+  revalidatePath("/", "layout");
   return { ok: true };
 }

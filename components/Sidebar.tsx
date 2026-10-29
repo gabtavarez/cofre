@@ -23,6 +23,7 @@ const GROUPS: { id: string; label: string; items: Item[] }[] = [
     label: "Planejar",
     items: [
       { href: "/sem-remorso", label: "Gasto sem remorso", icon: "tag" },
+      { href: "/desejos", label: "Lista de desejos", icon: "gift" },
       { href: "/categorias", label: "Categorias e limites", icon: "pie" },
       { href: "/metas", label: "Metas", icon: "target" },
       { href: "/dividas", label: "Dívidas", icon: "debt" },

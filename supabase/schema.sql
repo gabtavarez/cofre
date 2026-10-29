@@ -204,3 +204,22 @@ create policy "fss select" on public.free_spend_settings for select using (user_
 create policy "fss insert" on public.free_spend_settings for insert with check (user_id = public.data_owner());
 create policy "fss update" on public.free_spend_settings for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
 create policy "fss delete" on public.free_spend_settings for delete using (user_id = public.data_owner());
+
+-- Lista de desejos (ligada à verba do Gasto sem remorso)
+create table if not exists public.wishlist_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default public.data_owner() references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 120),
+  price numeric(14,2) not null check (price > 0),
+  priority smallint not null default 2 check (priority between 1 and 3),
+  url text,
+  wait_until date,
+  bought_at date,
+  created_at timestamptz not null default now()
+);
+create index if not exists wishlist_items_user_idx on public.wishlist_items (user_id, bought_at);
+alter table public.wishlist_items enable row level security;
+create policy "wish select" on public.wishlist_items for select using (user_id = public.data_owner());
+create policy "wish insert" on public.wishlist_items for insert with check (user_id = public.data_owner());
+create policy "wish update" on public.wishlist_items for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
+create policy "wish delete" on public.wishlist_items for delete using (user_id = public.data_owner());

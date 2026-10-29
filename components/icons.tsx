@@ -110,6 +110,7 @@ const PATHS: Record<string, ReactNode> = {
   upload: <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />,
   layers: <path d="M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5" />,
   book: <path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h10" />,
+  gift: <path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2.5 0-4-1-4-2.5S9.5 2.5 12 7zM12 7c2.5 0 4-1 4-2.5S14.5 2.5 12 7z" />,
   chevron: <path d="M6 9l6 6 6-6" />,
   logo: (
     <>

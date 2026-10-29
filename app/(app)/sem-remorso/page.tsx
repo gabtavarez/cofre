@@ -1,45 +1,20 @@
 import { FreeSettings } from "@/components/FreeSettings";
 import { MonthNav } from "@/components/MonthNav";
-import { getBase, getTransactionsBetween } from "@/lib/data";
 import { daysInMonth, monthBounds, parseISO, resolveMonth, todayISO } from "@/lib/dates";
 import { round2 } from "@/lib/finance";
 import { brl } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
-
-const DEFAULT_FREE = /lazer|restaurante|bar\b|jogo|game|roupa|compra|entreten|pessoal|streaming|viagem|hobby|cinema|presente|delivery|ifood|besteira|rol[eê]/i;
+import { getFreeBudget } from "@/lib/free";
 
 export default async function SemRemorso({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { m } = await searchParams;
   const today = todayISO();
   const month = resolveMonth(m);
-  const { start, end, days } = monthBounds(month);
+  const { start, days } = monthBounds(month);
 
-  const supabase = await createClient();
-  const [{ categories }, txs, { data: settings }] = await Promise.all([
-    getBase(),
-    getTransactionsBetween(start, end),
-    supabase.from("free_spend_settings").select("savings_pct,buffer_pct,category_ids").maybeSingle(),
-  ]);
-
-  const expenseCats = categories.filter((c) => c.kind === "expense");
-  const savedIds: string[] = settings?.category_ids ?? [];
-  const configured = !!settings;
-  const selected = configured
-    ? savedIds.filter((id) => expenseCats.some((c) => c.id === id))
-    : expenseCats.filter((c) => DEFAULT_FREE.test(c.name)).map((c) => c.id);
-  const savingsPct = Number(settings?.savings_pct ?? 20);
-  const bufferPct = Number(settings?.buffer_pct ?? 10);
-
-  const free = new Set(selected);
-  const income = txs.filter((t) => t.kind === "income").reduce((s, t) => s + t.amount, 0);
-  const expenses = txs.filter((t) => t.kind === "expense");
-  const committed = expenses.filter((t) => !t.category_id || !free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
-  const spentFree = expenses.filter((t) => t.category_id && free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
-
-  const save = round2((income * savingsPct) / 100);
-  const buf = round2((income * bufferPct) / 100);
-  const budget = Math.max(0, round2(income - committed - save - buf));
-  const left = round2(budget - spentFree);
+  const fb = await getFreeBudget(month);
+  const { income, opening, committed, save, buffer: buf, budget, spentFree, left, configured, savingsPct, bufferPct, selected } = fb;
+  const expenseCats = fb.expenseCategories;
+  const topFree = fb.spentByCategory;
   const over = left < 0;
 
   const cur = today.slice(0, 7);
@@ -53,7 +28,7 @@ export default async function SemRemorso({ searchParams }: { searchParams: Promi
 
   const state = over ? "over" : paceHigh || (budget > 0 && left / budget < 0.2) ? "warn" : "ok";
   const headline =
-    income === 0
+    income + opening === 0
       ? "Cadastre suas receitas do mês para eu calcular."
       : budget === 0 && !over
         ? "Neste mês não sobra verba depois dos compromissos e da poupança."
@@ -71,13 +46,7 @@ export default async function SemRemorso({ searchParams }: { searchParams: Promi
     { label: "Colchão", v: buf, cls: "bg-warn" },
     { label: "Verba livre", v: budget, cls: "bg-accent" },
   ];
-  const total = Math.max(income, committed + save + buf + budget, 1);
-
-  const topFree = expenseCats
-    .filter((c) => free.has(c.id))
-    .map((c) => ({ name: c.name, v: expenses.filter((t) => t.category_id === c.id).reduce((s, t) => s + t.amount, 0) }))
-    .filter((c) => c.v > 0)
-    .sort((a, b) => b.v - a.v);
+  const total = Math.max(income + opening, committed + save + buf + budget, 1);
 
   return (
     <>
@@ -115,7 +84,7 @@ export default async function SemRemorso({ searchParams }: { searchParams: Promi
       <section className="rounded-[20px] border border-line bg-surface p-5.5">
         <h2 className="mb-1 text-base font-bold">Como chegamos nesse valor</h2>
         <p className="mb-4 text-xs text-muted">
-          Da sua renda de {brl(income)}, separamos o que já está comprometido, a poupança e um colchão. O que sobra é seu.
+          Do que você tem (saldo anterior de {brl(opening)} + receitas de {brl(income)}), separamos o que já está comprometido, a poupança e um colchão. O que sobra é seu.
         </p>
         <div className="flex h-4 overflow-hidden rounded-full bg-raised">
           {parts.map((p) => (

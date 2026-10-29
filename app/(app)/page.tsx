@@ -121,7 +121,7 @@ export default async function Dashboard({
           </span>
           {monthIsCurrent && free && (
             <Link href="/sem-remorso" className="mt-1 flex flex-col gap-1 rounded-xl bg-ink/10 px-3 py-2 text-xs font-bold hover:bg-ink/15">
-              {free.income === 0 ? (
+              {free.income + free.opening === 0 ? (
                 <span>Cadastre as receitas do mês para calcular quanto você pode gastar sem remorso</span>
               ) : free.left <= 0 ? (
                 <span>
@@ -132,7 +132,7 @@ export default async function Dashboard({
                   Sem remorso: {brl(freePerDay)} por dia · {brl(free.left)} no mês
                 </span>
               )}
-              {free.income > 0 && (
+              {free.income + free.opening > 0 && (
                 <span className="font-semibold opacity-80">
                   Já separado: {brl(free.reserved)} de poupança e colchão
                 </span>

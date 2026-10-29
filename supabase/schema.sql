@@ -223,3 +223,21 @@ create policy "wish select" on public.wishlist_items for select using (user_id =
 create policy "wish insert" on public.wishlist_items for insert with check (user_id = public.data_owner());
 create policy "wish update" on public.wishlist_items for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
 create policy "wish delete" on public.wishlist_items for delete using (user_id = public.data_owner());
+
+-- Lista de mercado
+create table if not exists public.shopping_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default public.data_owner() references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 1 and 120),
+  qty numeric(8,2) not null default 1 check (qty > 0),
+  unit_price numeric(14,2) not null default 0 check (unit_price >= 0),
+  checked boolean not null default false,
+  done_at date,
+  created_at timestamptz not null default now()
+);
+create index if not exists shopping_items_user_idx on public.shopping_items (user_id, done_at);
+alter table public.shopping_items enable row level security;
+create policy "shop select" on public.shopping_items for select using (user_id = public.data_owner());
+create policy "shop insert" on public.shopping_items for insert with check (user_id = public.data_owner());
+create policy "shop update" on public.shopping_items for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
+create policy "shop delete" on public.shopping_items for delete using (user_id = public.data_owner());

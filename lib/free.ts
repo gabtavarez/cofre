@@ -8,6 +8,7 @@ export const DEFAULT_FREE =
 
 export type FreeBudget = {
   income: number;
+  reserved: number; // poupança + colchão
   budget: number;
   spentFree: number;
   left: number;
@@ -38,7 +39,8 @@ export async function getFreeBudget(month: string): Promise<FreeBudget> {
   const expenses = txs.filter((t) => t.kind === "expense");
   const committed = expenses.filter((t) => !t.category_id || !free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
   const spentFree = expenses.filter((t) => t.category_id && free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
-  const budget = Math.max(0, round2(income - committed - (income * savingsPct) / 100 - (income * bufferPct) / 100));
+  const reserved = round2((income * savingsPct) / 100 + (income * bufferPct) / 100);
+  const budget = Math.max(0, round2(income - committed - reserved));
 
   const cur = today.slice(0, 7);
   const { y, m } = parseISO(start);
@@ -47,6 +49,7 @@ export async function getFreeBudget(month: string): Promise<FreeBudget> {
 
   return {
     income,
+    reserved,
     budget,
     spentFree: round2(spentFree),
     left: round2(budget - spentFree),

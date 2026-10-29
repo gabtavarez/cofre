@@ -13,6 +13,7 @@ import {
   todayISO,
 } from "@/lib/dates";
 import { getBalanceRows, getBase, getCategoryHints, getTransactionsBetween, getUpcoming } from "@/lib/data";
+import { getFreeBudget } from "@/lib/free";
 import { brl } from "@/lib/format";
 import { dailySeries, expenseByCategory, round2, signed, summarize } from "@/lib/finance";
 
@@ -29,12 +30,14 @@ export default async function Dashboard({
   const { start, end } = monthBounds(month);
   const firstMonth = shiftMonth(month, -5);
 
-  const [base, txs6, balanceRows, upcoming, hints] = await Promise.all([
+  const isCurrentMonth = month === today.slice(0, 7);
+  const [base, txs6, balanceRows, upcoming, hints, free] = await Promise.all([
     getBase(),
     getTransactionsBetween(monthBounds(firstMonth).start, end),
     getBalanceRows(end > today ? end : today),
     getUpcoming(addDays(today, 60), 5),
     getCategoryHints(),
+    isCurrentMonth ? getFreeBudget(month) : Promise.resolve(null),
   ]);
 
   const { accounts, categories } = base;
@@ -80,9 +83,8 @@ export default async function Dashboard({
 
   const saved = sum.income > 0 ? Math.round((sum.result / sum.income) * 100) : null;
   const monthIsCurrent = month === today.slice(0, 7);
-  // saldo projetado do fim do mês dividido pelos dias que faltam (contando hoje)
-  const daysLeft = Math.max(1, monthBounds(month).days - Number(today.slice(8, 10)) + 1);
-  const perDay = round2(series.endBalance / daysLeft);
+  // verba "sem remorso" por dia: o que sobra depois de compromissos, poupança e colchão
+  const freePerDay = free && free.daysLeft > 0 && free.left > 0 ? round2(free.left / free.daysLeft) : 0;
 
   return (
     <>
@@ -117,12 +119,25 @@ export default async function Dashboard({
           <span className="text-xs font-semibold">
             Projetado p/ fim do mês: <b>{brl(series.endBalance)}</b>
           </span>
-          {monthIsCurrent && (
-            <span className="mt-1 rounded-xl bg-ink/10 px-3 py-2 text-xs font-bold">
-              {perDay > 0
-                ? `Livre para gastar: ${brl(perDay)} por dia`
-                : "Mês no vermelho: as contas a pagar passam do saldo"}
-            </span>
+          {monthIsCurrent && free && (
+            <Link href="/sem-remorso" className="mt-1 flex flex-col gap-1 rounded-xl bg-ink/10 px-3 py-2 text-xs font-bold hover:bg-ink/15">
+              {free.income === 0 ? (
+                <span>Cadastre as receitas do mês para calcular quanto você pode gastar sem remorso</span>
+              ) : free.left <= 0 ? (
+                <span>
+                  {free.budget === 0 ? "Sem verba livre neste mês" : `Verba sem remorso estourada em ${brl(Math.abs(free.left))}`}
+                </span>
+              ) : (
+                <span>
+                  Sem remorso: {brl(freePerDay)} por dia · {brl(free.left)} no mês
+                </span>
+              )}
+              {free.income > 0 && (
+                <span className="font-semibold opacity-80">
+                  Já separado: {brl(free.reserved)} de poupança e colchão
+                </span>
+              )}
+            </Link>
           )}
         </div>
         <div className={`${card} flex min-w-55 flex-1 flex-col gap-2.5`}>

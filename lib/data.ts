@@ -44,7 +44,8 @@ export const getBase = cache(async function getBase(): Promise<{ accounts: Accou
 
 const REFS = "*, category:categories(name), account:accounts(name)";
 
-export async function getTransactionsBetween(from: string, to: string): Promise<TxWithRefs[]> {
+/** Cache por requisição: várias partes da mesma página pedem o mesmo intervalo e só uma consulta vai ao banco. */
+export const getTransactionsBetween = cache(async function getTransactionsBetween(from: string, to: string): Promise<TxWithRefs[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("transactions")
@@ -55,18 +56,21 @@ export async function getTransactionsBetween(from: string, to: string): Promise<
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as TxWithRefs[];
-}
+});
+
+type BalanceRow = Pick<Transaction, "kind" | "amount" | "date" | "paid" | "account_id">;
+
+/** Todos os lançamentos (campos leves), buscados uma única vez por requisição. */
+const getAllBalanceRows = cache(async function getAllBalanceRows(): Promise<BalanceRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("transactions").select("kind,amount,date,paid,account_id").limit(20000);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as BalanceRow[];
+});
 
 /** Dados leves de todos os lançamentos até `to`, para calcular saldos. */
-export async function getBalanceRows(to: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("kind,amount,date,paid,account_id")
-    .lte("date", to)
-    .limit(20000);
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Pick<Transaction, "kind" | "amount" | "date" | "paid" | "account_id">[];
+export async function getBalanceRows(to: string): Promise<BalanceRow[]> {
+  return (await getAllBalanceRows()).filter((r) => r.date <= to);
 }
 
 export async function getUpcoming(limitDate: string, limit = 5): Promise<TxWithRefs[]> {

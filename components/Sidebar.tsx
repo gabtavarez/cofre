@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Icon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
 import { signOut } from "@/lib/actions";
+import { getSelectedMonth, subscribeMonth } from "@/lib/monthStore";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 type Item = { href: string; label: string; icon: IconName };
@@ -55,13 +56,20 @@ const MORE: Item[] = [
   { href: "/ajuda", label: "Ajuda e perguntas", icon: "help" },
 ];
 
+const MONTH_PAGES = ["/", "/lancamentos", "/sem-remorso", "/desejos", "/relatorios"];
+const useMonthHref = () => {
+  const m = useSyncExternalStore(subscribeMonth, getSelectedMonth, () => null);
+  return (href: string) => (m && MONTH_PAGES.includes(href) ? `${href}?m=${m}` : href);
+};
+
 const isActive = (pathname: string, href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
 function NavLink({ item, pathname, small }: { item: Item; pathname: string; small?: boolean }) {
   const active = isActive(pathname, item.href);
+  const withMonth = useMonthHref();
   return (
     <Link
-      href={item.href}
+      href={withMonth(item.href)}
       aria-current={active ? "page" : undefined}
       className={`flex items-center gap-3 rounded-xl px-3.5 whitespace-nowrap ${small ? "min-h-10 text-[13px]" : "min-h-11 text-sm"} ${
         active ? "bg-accent font-extrabold text-ink" : "font-semibold text-muted hover:bg-surface hover:text-text"
@@ -121,6 +129,7 @@ export function Sidebar({ email }: { email: string }) {
     };
   }, [sheet]);
 
+  const withMonth = useMonthHref();
   const moreActive = !TOP.some((i) => isActive(pathname, i.href));
 
   return (
@@ -140,7 +149,7 @@ export function Sidebar({ email }: { email: string }) {
           return (
             <Link
               key={i.href}
-              href={i.href}
+              href={withMonth(i.href)}
               aria-current={active ? "page" : undefined}
               className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-bold ${active ? "text-accent" : "text-muted"}`}
             >

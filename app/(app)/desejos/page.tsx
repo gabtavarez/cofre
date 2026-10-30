@@ -1,12 +1,16 @@
+import { MonthNav } from "@/components/MonthNav";
 import { WishlistClient, type Wish } from "@/components/WishlistClient";
 import { getBase } from "@/lib/data";
-import { resolveMonth, todayISO } from "@/lib/dates";
+import { monthBounds, resolveMonth, todayISO } from "@/lib/dates";
 import { getFreeBudget } from "@/lib/free";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function Desejos() {
-  const today = todayISO();
-  const month = resolveMonth(undefined);
+export default async function Desejos({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  const { m } = await searchParams;
+  const realToday = todayISO();
+  const month = resolveMonth(m);
+  // Em mês futuro, os desejos com "esperar até" dentro do mês já contam como liberados.
+  const today = month > realToday.slice(0, 7) ? monthBounds(month).end : realToday;
   const supabase = await createClient();
   const [free, { accounts }, { data }] = await Promise.all([
     getFreeBudget(month),
@@ -30,9 +34,12 @@ export default async function Desejos() {
 
   return (
     <>
-      <header className="flex flex-col gap-1">
-        <span className="text-[13px] text-muted">Seus desejos, de acordo com a sua verba do mês</span>
-        <h1 className="text-3xl font-extrabold">Lista de desejos</h1>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-[13px] text-muted">Seus desejos, de acordo com a sua verba do mês</span>
+          <h1 className="text-3xl font-extrabold">Lista de desejos</h1>
+        </div>
+        <MonthNav month={month} basePath="/desejos" />
       </header>
       <WishlistClient
         wishes={wishes}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { MonthRemember } from "@/components/MonthRemember";
 import { monthLabel, shiftMonth } from "@/lib/dates";
 
 export function MonthNav({ month, basePath }: { month: string; basePath: string }) {
@@ -7,6 +8,7 @@ export function MonthNav({ month, basePath }: { month: string; basePath: string 
   const next = `${basePath}?m=${shiftMonth(month, 1)}`;
   return (
     <div className="flex min-h-12 items-center gap-1 rounded-[14px] border border-line bg-surface px-1.5">
+      <MonthRemember month={month} />
       <Link
         href={prev}
         aria-label="Mês anterior"

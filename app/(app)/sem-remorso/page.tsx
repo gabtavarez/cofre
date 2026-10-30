@@ -41,10 +41,10 @@ export default async function SemRemorso({ searchParams }: { searchParams: Promi
   const palette = { ok: "bg-accent text-ink", warn: "bg-warn text-[#2a1d00]", over: "bg-expense text-[#230a10]" }[state];
 
   const parts = [
-    { label: "Compromissos", v: committed, cls: "bg-raised" },
-    { label: "Poupança", v: save, cls: "bg-invest" },
-    { label: "Colchão", v: buf, cls: "bg-warn" },
-    { label: "Verba livre", v: budget, cls: "bg-accent" },
+    { label: "Compromissos", hint: "contas já cadastradas", v: committed, color: "#38bdf8" },
+    { label: "Poupança", hint: `${savingsPct}% da receita`, v: save, color: "#b9a7ff" },
+    { label: "Colchão", hint: `${bufferPct}% da receita`, v: buf, color: "#ffc857" },
+    { label: "Verba livre", hint: "só sua", v: budget, color: "#c8f169" },
   ];
   const total = Math.max(income + opening, committed + save + buf + budget, 1);
 
@@ -86,17 +86,24 @@ export default async function SemRemorso({ searchParams }: { searchParams: Promi
         <p className="mb-4 text-xs text-muted">
           Do que você tem (saldo anterior de {brl(opening)} + receitas de {brl(income)}), separamos o que já está comprometido, a poupança e um colchão. O que sobra é seu.
         </p>
-        <div className="flex h-4 overflow-hidden rounded-full bg-raised">
-          {parts.map((p) => (
-            <div key={p.label} className={p.cls} style={{ width: `${(p.v / total) * 100}%` }} title={`${p.label}: ${brl(p.v)}`} />
-          ))}
+        <div className="flex h-4 gap-0.5 overflow-hidden rounded-full bg-raised">
+          {parts
+            .filter((p) => p.v > 0)
+            .map((p) => (
+              <div key={p.label} className="h-full first:rounded-l-full last:rounded-r-full" style={{ width: `${(p.v / total) * 100}%`, background: p.color }} title={`${p.label}: ${brl(p.v)}`} />
+            ))}
         </div>
-        <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {parts.map((p) => (
-            <li key={p.label} className="flex items-center gap-2">
-              <span className={`size-3 rounded-full ${p.cls}`} />
-              <span className="text-soft">{p.label}</span>
-              <b className="ml-auto">{brl(p.v)}</b>
+            <li key={p.label} className="flex flex-col gap-0.5 rounded-xl border border-line bg-side px-3.5 py-3">
+              <span className="flex items-center gap-2 text-xs font-bold text-soft">
+                <span className="size-2.5 rounded-full" style={{ background: p.color }} />
+                {p.label}
+              </span>
+              <b className="font-display text-lg">{brl(p.v)}</b>
+              <span className="text-[11px] text-muted">
+                {p.hint} · {Math.round((p.v / total) * 100)}% do total
+              </span>
             </li>
           ))}
         </ul>

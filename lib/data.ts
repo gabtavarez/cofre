@@ -241,3 +241,20 @@ export async function recordAndGetSnapshots(month: string, nw: NetWorth): Promis
     debts: Number(r.debts),
   }));
 }
+
+/** Sobra média por mês (receitas − despesas), olhando de 2 meses atrás até 2 meses à frente, só meses com lançamentos. */
+export async function getMonthlySurplus(today: string): Promise<{ avg: number; months: number }> {
+  const { shiftMonth, monthBounds } = await import("@/lib/dates");
+  const cur = today.slice(0, 7);
+  const from = monthBounds(shiftMonth(cur, -2)).start;
+  const to = monthBounds(shiftMonth(cur, 2)).end;
+  const txs = await getTransactionsBetween(from, to);
+  const byMonth = new Map<string, number>();
+  for (const t of txs) {
+    const k = t.date.slice(0, 7);
+    byMonth.set(k, (byMonth.get(k) ?? 0) + (t.kind === "income" ? t.amount : -t.amount));
+  }
+  const vals = [...byMonth.values()];
+  if (vals.length === 0) return { avg: 0, months: 0 };
+  return { avg: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100, months: vals.length };
+}

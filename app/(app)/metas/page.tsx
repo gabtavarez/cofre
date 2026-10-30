@@ -1,13 +1,13 @@
 import { ActionForm, DeleteButton, Field, fieldCls } from "@/components/forms";
 import { InlineMoney } from "@/components/InlineMoney";
 import { addGoalMove, createGoal, deleteGoal } from "@/lib/actions";
-import { getGoals, getInvestments } from "@/lib/data";
-import { daysBetween, todayISO } from "@/lib/dates";
+import { getGoals, getInvestments, getMonthlySurplus } from "@/lib/data";
+import { daysBetween, monthLabel, shiftMonth, todayISO } from "@/lib/dates";
 import { brl } from "@/lib/format";
 
 export default async function Metas() {
-  const [goals, investments] = await Promise.all([getGoals(), getInvestments()]);
   const today = todayISO();
+  const [goals, investments, surplus] = await Promise.all([getGoals(), getInvestments(), getMonthlySurplus(today)]);
 
   return (
     <>
@@ -15,6 +15,17 @@ export default async function Metas() {
         <span className="text-[13px] text-muted">Guarde dinheiro com um destino</span>
         <h1 className="text-3xl font-extrabold">Metas</h1>
       </header>
+
+      <p className="rounded-xl bg-side px-4 py-3 text-xs text-muted">
+        {surplus.avg > 0 ? (
+          <>
+            As estimativas usam a sua sobra média de <b className="text-text">{brl(surplus.avg)}</b> por mês (receitas − despesas, média de {surplus.months}{" "}
+            {surplus.months === 1 ? "mês" : "meses"} com lançamentos). Cada meta é calculada sozinha, como se toda a sobra fosse para ela.
+          </>
+        ) : (
+          "Ainda não há sobra mensal para estimar prazos. Cadastre receitas e despesas dos próximos meses."
+        )}
+      </p>
 
       <section className="rounded-[20px] border border-line bg-surface p-5.5">
         <h2 className="mb-4 text-base font-bold">Nova meta</h2>
@@ -63,6 +74,17 @@ export default async function Metas() {
               hint = `Guarde ${brl(Math.round((left / months) * 100) / 100)} por mês para chegar a tempo`;
             }
           }
+          let eta: string | null = null;
+          if (!done && surplus.avg > 0) {
+            const n = Math.ceil(left / surplus.avg);
+            const when = monthLabel(shiftMonth(today.slice(0, 7), n));
+            const span = n === 1 ? "1 mês" : n >= 24 ? `${(n / 12).toFixed(1).replace(".", ",")} anos` : `${n} meses`;
+            eta = `No ritmo atual: ${span}, em ${when}`;
+            if (g.target_date) {
+              const late = when.length > 0 && shiftMonth(today.slice(0, 7), n) > g.target_date.slice(0, 7);
+              eta += late ? " (depois do prazo)" : " (dentro do prazo)";
+            }
+          }
           return (
             <article
               key={g.id}
@@ -98,6 +120,7 @@ export default async function Metas() {
                   {done ? "Meta batida!" : `${Math.round(pct)}% · faltam ${brl(left)}`}
                 </span>
                 {hint && <span className="text-xs font-semibold text-soft">{hint}</span>}
+                {eta && <span className="text-xs font-bold text-accent-soft">{eta}</span>}
               </div>
 
               {g.investment_id ? (

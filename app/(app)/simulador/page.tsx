@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ChartHover } from "@/components/ChartHover";
 import { fieldCls } from "@/components/forms";
 import { brl, parseBRL } from "@/lib/format";
 
@@ -129,11 +130,25 @@ export default function Simulador() {
             <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 border-t-2 border-dashed border-muted" /> Só o que você guardou</span>
           </span>
         </div>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Gráfico da evolução do patrimônio ao longo do prazo" className="block">
+        <ChartHover
+          W={W}
+          H={H}
+          top={pad}
+          bottom={H - pad}
+          label="Gráfico da evolução do patrimônio ao longo do prazo"
+          pts={points.map((p) => ({
+            x: x(p.m),
+            title: p.m === 0 ? "Início" : `${Math.floor(p.m / 12) ? `${Math.floor(p.m / 12)} ${Math.floor(p.m / 12) === 1 ? "ano" : "anos"}` : ""}${p.m % 12 && Math.floor(p.m / 12) ? " e " : ""}${p.m % 12 ? `${p.m % 12} ${p.m % 12 === 1 ? "mês" : "meses"}` : ""}`,
+            rows: [
+              { name: "Com juros", value: brl(Math.round(p.total * 100) / 100), y: y(p.total), color: "var(--color-accent)" },
+              { name: "Guardado", value: brl(Math.round(p.invested * 100) / 100), y: y(p.invested), color: "var(--color-muted)" },
+            ],
+          }))}
+        >
           <path d={`${line("total")} L${x(sim.n)} ${H - pad} L${x(0)} ${H - pad} Z`} fill="var(--color-accent)" fillOpacity="0.12" />
           <path d={line("invested")} fill="none" stroke="var(--color-muted)" strokeWidth="2" strokeDasharray="5 6" />
           <path d={line("total")} fill="none" stroke="var(--color-accent)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        </ChartHover>
       </section>
 
       <section className="rounded-[20px] border border-line bg-surface p-5.5">

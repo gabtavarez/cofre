@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CashflowChart, Donut, MonthlyBars, sliceColor, type BarMonth } from "@/components/charts";
+import { CashflowChart, CategoryDonut, MonthlyBars, type BarMonth } from "@/components/charts";
 import { MonthNav } from "@/components/MonthNav";
 import { NewTransactionButton } from "@/components/TransactionDialog";
 import {
@@ -202,19 +202,7 @@ export default async function Dashboard({
             <p className="py-10 text-center text-sm text-muted">Nenhuma despesa neste mês.</p>
           ) : (
             <>
-              <div className="flex justify-center">
-                <Donut slices={slices} total={sliceTotal} />
-              </div>
-              <ul className="flex flex-col gap-2.5 text-[13px]">
-                {slices.map((s, i) => (
-                  <li key={s.name} className="flex items-center gap-2.5">
-                    <span className="size-2.5 rounded-xs" style={{ background: sliceColor(i) }} />
-                    <span className="flex-1 truncate">{s.name}</span>
-                    <span className="text-muted">{((s.value / sliceTotal) * 100).toFixed(1).replace(".", ",")}%</span>
-                    <b className="min-w-22 text-right">{brl(s.value)}</b>
-                  </li>
-                ))}
-              </ul>
+              <CategoryDonut slices={slices} total={sliceTotal} />
             </>
           )}
         </div>

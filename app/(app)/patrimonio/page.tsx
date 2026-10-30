@@ -1,5 +1,6 @@
 import { getNetWorth, recordAndGetSnapshots } from "@/lib/data";
 import { monthLabel, todayISO } from "@/lib/dates";
+import { ChartHover } from "@/components/ChartHover";
 import { brl } from "@/lib/format";
 
 export default async function Patrimonio() {
@@ -77,13 +78,24 @@ export default async function Patrimonio() {
             Volte no mês que vem para ver a linha de evolução.
           </p>
         ) : (
-          <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Evolução do patrimônio líquido por mês" className="block">
+          <ChartHover
+            W={W}
+            H={H}
+            top={pad}
+            bottom={H - pad}
+            label="Evolução do patrimônio líquido por mês"
+            pts={pts.map((p, i) => ({
+              x: x(i),
+              title: monthLabel(p.month),
+              rows: [{ name: "Líquido", value: brl(Math.round(p.net * 100) / 100), y: y(p.net), color: "var(--color-accent)" }],
+            }))}
+          >
             <path d={`${path} L${x(pts.length - 1)} ${H - pad} L${x(0)} ${H - pad} Z`} fill="var(--color-accent)" fillOpacity="0.12" />
             <path d={path} fill="none" stroke="var(--color-accent)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
             {pts.map((p, i) => (
               <circle key={p.month} cx={x(i)} cy={y(p.net)} r="4" fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="2" />
             ))}
-          </svg>
+          </ChartHover>
         )}
         <table className="mt-4 w-full text-sm">
           <thead>

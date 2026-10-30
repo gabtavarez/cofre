@@ -52,12 +52,11 @@ export async function getFreeBudget(month: string): Promise<FreeBudget> {
   const expenses = txs.filter((t) => t.kind === "expense");
   const committed = expenses.filter((t) => !t.category_id || !free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
   const spentFree = expenses.filter((t) => t.category_id && free.has(t.category_id)).reduce((s, t) => s + t.amount, 0);
-  // Base = dinheiro que já estava na conta + receitas do mês.
-  const base = income + opening;
-  const save = round2((base * savingsPct) / 100);
-  const buffer = round2((base * bufferPct) / 100);
+  // Poupança e colchão = % só das receitas do mês; o saldo anterior entra como dinheiro disponível.
+  const save = round2((income * savingsPct) / 100);
+  const buffer = round2((income * bufferPct) / 100);
   const reserved = round2(save + buffer);
-  const budget = Math.max(0, round2(base - committed - reserved));
+  const budget = Math.max(0, round2(income + opening - committed - reserved));
 
   const cur = today.slice(0, 7);
   const { y, m } = parseISO(start);

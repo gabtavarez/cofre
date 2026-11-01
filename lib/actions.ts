@@ -664,6 +664,29 @@ export async function addWish(fd: FormData): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function updateWish(
+  id: string,
+  v: { name: string; price: string; priority: number; url: string; waitUntil: string },
+): Promise<ActionResult> {
+  const name = v.name.trim();
+  const price = parseBRL(v.price);
+  const url = v.url.trim();
+  if (!name) return fail("Dê um nome ao item.");
+  if (!Number.isFinite(price) || price <= 0) return fail("Informe um preço válido.");
+  if (![1, 2, 3].includes(v.priority)) return fail("Prioridade inválida.");
+  if (url && !/^https?:\/\//i.test(url)) return fail("O link deve começar com http:// ou https://");
+  if (v.waitUntil && !/^\d{4}-\d{2}-\d{2}$/.test(v.waitUntil)) return fail("Data inválida.");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("wishlist_items")
+    .update({ name: name.slice(0, 120), price, priority: v.priority, url: url || null, wait_until: v.waitUntil || null })
+    .eq("id", id)
+    .is("bought_at", null);
+  if (error) return fail(error.message);
+  revalidatePath("/desejos");
+  return { ok: true };
+}
+
 export async function deleteWish(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("wishlist_items").delete().eq("id", id);

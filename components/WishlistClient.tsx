@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { ActionForm, Field, fieldCls } from "@/components/forms";
-import { addWish, buyWish, deleteWish } from "@/lib/actions";
+import { addWish, buyWish, deleteWish, updateWish } from "@/lib/actions";
 import { brl, parseBRL } from "@/lib/format";
 
 export type Wish = {
@@ -184,6 +184,8 @@ function WishRow({
   const [acc, setAcc] = useState(accounts[0]?.id ?? "");
   const [cat, setCat] = useState(categories[0]?.id ?? "");
   const [amount, setAmount] = useState(w.price.toFixed(2).replace(".", ","));
+  const [editing, setEditing] = useState(false);
+  const [ed, setEd] = useState({ name: w.name, price: w.price.toFixed(2).replace(".", ","), priority: w.priority, url: w.url ?? "", waitUntil: w.waitUntil ?? "" });
 
   const tone = { ok: "bg-income-bg text-income-text", wait: "bg-warn-bg text-warn-text", later: "bg-raised text-muted" }[status.tone];
 
@@ -214,6 +216,19 @@ function WishRow({
         </button>
         <button
           type="button"
+          onClick={() => {
+            setEd({ name: w.name, price: w.price.toFixed(2).replace(".", ","), priority: w.priority, url: w.url ?? "", waitUntil: w.waitUntil ?? "" });
+            setError(null);
+            setEditing((v) => !v);
+          }}
+          aria-expanded={editing}
+          aria-label={`Editar ${w.name}`}
+          className="min-h-10 cursor-pointer rounded-xl px-3 text-[13px] font-bold text-muted hover:text-text"
+        >
+          Editar
+        </button>
+        <button
+          type="button"
           disabled={pending}
           onClick={() => {
             if (!confirm(`Remover "${w.name}" da lista?`)) return;
@@ -228,6 +243,48 @@ function WishRow({
           Remover
         </button>
       </div>
+
+      {editing && (
+        <div className="flex flex-wrap items-end gap-3 bg-side px-5 py-4">
+          <Field label="Nome" className="min-w-52 flex-[2_1_0]">
+            <input value={ed.name} maxLength={120} onChange={(e) => setEd({ ...ed, name: e.target.value })} className={fieldCls} />
+          </Field>
+          <Field label="Preço (R$)" className="min-w-32 flex-1">
+            <input inputMode="decimal" value={ed.price} onChange={(e) => setEd({ ...ed, price: e.target.value })} className={fieldCls} />
+          </Field>
+          <Field label="Prioridade" className="min-w-32 flex-1">
+            <select value={ed.priority} onChange={(e) => setEd({ ...ed, priority: Number(e.target.value) as 1 | 2 | 3 })} className={fieldCls}>
+              <option value={3}>Alta</option>
+              <option value={2}>Média</option>
+              <option value={1}>Baixa</option>
+            </select>
+          </Field>
+          <Field label="Link (opcional)" className="min-w-52 flex-[2_1_0]">
+            <input type="url" placeholder="https://" value={ed.url} onChange={(e) => setEd({ ...ed, url: e.target.value })} className={fieldCls} />
+          </Field>
+          <Field label="Esperar até (opcional)" className="min-w-40 flex-1">
+            <input type="date" value={ed.waitUntil} onChange={(e) => setEd({ ...ed, waitUntil: e.target.value })} className={fieldCls} />
+          </Field>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              setError(null);
+              start(async () => {
+                const r = await updateWish(w.id, ed);
+                if (r.ok) setEditing(false);
+                else setError(r.error);
+              });
+            }}
+            className="min-h-12 cursor-pointer rounded-xl bg-accent px-5 text-sm font-extrabold text-ink hover:brightness-110 disabled:opacity-50"
+          >
+            {pending ? "Salvando…" : "Salvar"}
+          </button>
+          <button type="button" onClick={() => setEditing(false)} className="min-h-12 cursor-pointer rounded-xl px-3 text-sm font-bold text-muted hover:text-text">
+            Cancelar
+          </button>
+        </div>
+      )}
 
       {open && (
         <div className="flex flex-wrap items-end gap-3 bg-side px-5 py-4">

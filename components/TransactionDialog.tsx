@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/icons";
 import { createTransaction, updateTransaction } from "@/lib/actions";
 import { addMonths } from "@/lib/dates";
@@ -115,7 +116,8 @@ export function TransactionDialog({
       active ? `font-extrabold ${activeCls}` : "font-semibold text-muted hover:text-text"
     }`;
 
-  return (
+  // Portal no <body>: dentro de listas com content-visibility/transform o "fixed" ficaria preso na linha.
+  return createPortal(
     <div
       className="anim-pop anim-backdrop fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#050810]/80 px-5 py-10"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
@@ -336,6 +338,7 @@ export function TransactionDialog({
           <p className="px-7 pb-5 text-xs text-warn-text">Crie uma conta em “Contas” antes de lançar.</p>
         )}
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

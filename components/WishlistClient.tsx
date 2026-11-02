@@ -207,7 +207,10 @@ function WishRow({
         <b className="w-28 text-right text-sm">{brl(w.price)}</b>
         <button
           type="button"
-          onClick={onBuy}
+          onClick={() => {
+            if (!open) setAmount(w.price.toFixed(2).replace(".", ","));
+            onBuy();
+          }}
           disabled={!canBuyNow}
           title={canBuyNow ? "Marcar como comprado" : "Ainda dentro do prazo de espera"}
           className="min-h-10 cursor-pointer rounded-xl bg-accent px-4 text-[13px] font-extrabold text-ink hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"

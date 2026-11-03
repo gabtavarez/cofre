@@ -44,6 +44,7 @@ const GROUPS: { id: string; label: string; items: Item[] }[] = [
     items: [
       { href: "/investimentos", label: "Investimentos", icon: "trend" },
       { href: "/simulador", label: "Simulador", icon: "calc" },
+      { href: "/financiamento", label: "Financiar imóvel", icon: "home" },
       { href: "/aprender", label: "Aprender a investir", icon: "book" },
     ],
   },

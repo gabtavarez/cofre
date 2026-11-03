@@ -687,6 +687,19 @@ export async function updateWish(
   return { ok: true };
 }
 
+export async function saveWishNotes(content: string): Promise<ActionResult> {
+  if (content.length > 20000) return fail("Texto muito longo (máximo de 20.000 caracteres).");
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getClaims();
+  if (!auth?.claims) return fail("Sessão expirada. Entre novamente.");
+  const { data: owner } = await supabase.rpc("data_owner");
+  const { error } = await supabase
+    .from("wishlist_notes")
+    .upsert({ user_id: owner, content, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) return fail(error.message);
+  return { ok: true };
+}
+
 export async function deleteWish(id: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("wishlist_items").delete().eq("id", id);

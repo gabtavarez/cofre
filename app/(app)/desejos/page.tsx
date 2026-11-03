@@ -1,4 +1,5 @@
 import { MonthNav } from "@/components/MonthNav";
+import { WishNotes } from "@/components/WishNotes";
 import { WishlistClient, type Wish } from "@/components/WishlistClient";
 import { getBase } from "@/lib/data";
 import { monthBounds, resolveMonth, todayISO } from "@/lib/dates";
@@ -12,7 +13,7 @@ export default async function Desejos({ searchParams }: { searchParams: Promise<
   // Em mês futuro, os desejos com "esperar até" dentro do mês já contam como liberados.
   const today = month > realToday.slice(0, 7) ? monthBounds(month).end : realToday;
   const supabase = await createClient();
-  const [free, { accounts }, { data }] = await Promise.all([
+  const [free, { accounts }, { data }, { data: notes }] = await Promise.all([
     getFreeBudget(month),
     getBase(),
     supabase
@@ -20,6 +21,7 @@ export default async function Desejos({ searchParams }: { searchParams: Promise<
       .select("id,name,price,priority,url,wait_until,bought_at")
       .order("created_at", { ascending: false })
       .limit(500),
+    supabase.from("wishlist_notes").select("content").maybeSingle(),
   ]);
 
   const wishes: Wish[] = (data ?? []).map((w) => ({
@@ -49,6 +51,7 @@ export default async function Desejos({ searchParams }: { searchParams: Promise<
         accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
         categories={free.freeCategories}
       />
+      <WishNotes initial={notes?.content ?? ""} />
     </>
   );
 }

@@ -241,3 +241,15 @@ create policy "shop select" on public.shopping_items for select using (user_id =
 create policy "shop insert" on public.shopping_items for insert with check (user_id = public.data_owner());
 create policy "shop update" on public.shopping_items for update using (user_id = public.data_owner()) with check (user_id = public.data_owner());
 create policy "shop delete" on public.shopping_items for delete using (user_id = public.data_owner());
+
+-- Bloco de notas da lista de desejos
+create table if not exists public.wishlist_notes (
+  user_id uuid primary key default public.data_owner() references auth.users(id) on delete cascade,
+  content text not null default '' check (char_length(content) <= 20000),
+  updated_at timestamptz not null default now()
+);
+alter table public.wishlist_notes enable row level security;
+create policy "wnotes select" on public.wishlist_notes for select using (user_id = (select public.data_owner()));
+create policy "wnotes insert" on public.wishlist_notes for insert with check (user_id = (select public.data_owner()));
+create policy "wnotes update" on public.wishlist_notes for update using (user_id = (select public.data_owner())) with check (user_id = (select public.data_owner()));
+create policy "wnotes delete" on public.wishlist_notes for delete using (user_id = (select public.data_owner()));

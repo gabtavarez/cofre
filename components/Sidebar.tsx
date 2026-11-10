@@ -34,6 +34,7 @@ const GROUPS: { id: string; label: string; items: Item[] }[] = [
     id: "acompanhar",
     label: "Acompanhar",
     items: [
+      { href: "/assistente", label: "Assistente", icon: "chat" },
       { href: "/relatorios", label: "Relatórios", icon: "bars" },
       { href: "/patrimonio", label: "Patrimônio", icon: "layers" },
     ],

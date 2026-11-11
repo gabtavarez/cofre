@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   const user = data?.claims ?? null;
 
   const isLogin = request.nextUrl.pathname.startsWith("/login");
-  if (request.nextUrl.pathname.startsWith("/auth/")) return response;
+  if (request.nextUrl.pathname.startsWith("/auth/") || request.nextUrl.pathname === "/api/pro/webhook") return response;
 
   if (!user && !isLogin) {
     const url = request.nextUrl.clone();

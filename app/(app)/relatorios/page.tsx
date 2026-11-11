@@ -1,4 +1,5 @@
 import { MonthlyBars, type BarMonth } from "@/components/charts";
+import { proGate } from "@/components/ProGate";
 import { getTransactionsBetween } from "@/lib/data";
 import { monthBounds, monthLabel, monthShort, resolveMonth, shiftMonth } from "@/lib/dates";
 import { MonthNav } from "@/components/MonthNav";
@@ -20,6 +21,8 @@ function Delta({ cur, prev, goodWhenUp }: { cur: number; prev: number | null; go
 }
 
 export default async function Relatorios({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  const gate = await proGate("Relatórios", "Compare meses, veja para onde vai o seu dinheiro e como a sua poupança evolui.");
+  if (gate) return gate;
   const { m } = await searchParams;
   const month = resolveMonth(m); // último mês do período
   const first = shiftMonth(month, -11);

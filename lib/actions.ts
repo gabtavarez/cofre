@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getPro, PRO_ERROR } from "@/lib/pro";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, addMonths, todayISO } from "@/lib/dates";
@@ -509,6 +510,7 @@ export async function checkImport(
   rows: { date: string; amount: number; externalId: string }[],
 ): Promise<Record<string, "dup" | "maybe">> {
   if (!accountId || rows.length === 0 || rows.length > 5000) return {};
+  if (!(await getPro()).active) return {};
   const supabase = await createClient();
   const dates = rows.map((r) => r.date).sort();
   const { data } = await supabase
@@ -544,6 +546,7 @@ export async function importTransactions(
   accountId: string,
   rows: ImportRow[],
 ): Promise<{ ok: true; imported: number; skipped: number } | { ok: false; error: string }> {
+  if (!(await getPro()).active) return { ok: false, error: PRO_ERROR };
   if (!accountId) return { ok: false, error: "Escolha a conta." };
   if (rows.length === 0) return { ok: false, error: "Nenhum lançamento selecionado." };
   if (rows.length > 2000) return { ok: false, error: "Importe no máximo 2000 lançamentos por vez." };
@@ -581,6 +584,7 @@ export async function importTransactions(
 /* ───────────── Compartilhar ───────────── */
 
 export async function inviteMember(fd: FormData): Promise<ActionResult> {
+  if (!(await getPro()).active) return fail(PRO_ERROR);
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail("Digite um e-mail válido.");
   const supabase = await createClient();

@@ -10,7 +10,7 @@ import { signOut } from "@/lib/actions";
 import { getSelectedMonth, subscribeMonth } from "@/lib/monthStore";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
-type Item = { href: string; label: string; icon: IconName };
+type Item = { href: string; label: string; icon: IconName; pro?: boolean };
 
 const TOP: Item[] = [
   { href: "/", label: "Visão geral", icon: "home" },
@@ -34,9 +34,9 @@ const GROUPS: { id: string; label: string; items: Item[] }[] = [
     id: "acompanhar",
     label: "Acompanhar",
     items: [
-      { href: "/assistente", label: "Assistente", icon: "chat" },
-      { href: "/relatorios", label: "Relatórios", icon: "bars" },
-      { href: "/patrimonio", label: "Patrimônio", icon: "layers" },
+      { href: "/assistente", label: "Assistente", icon: "chat", pro: true },
+      { href: "/relatorios", label: "Relatórios", icon: "bars", pro: true },
+      { href: "/patrimonio", label: "Patrimônio", icon: "layers", pro: true },
     ],
   },
   {
@@ -45,15 +45,16 @@ const GROUPS: { id: string; label: string; items: Item[] }[] = [
     items: [
       { href: "/investimentos", label: "Investimentos", icon: "trend" },
       { href: "/simulador", label: "Simulador", icon: "calc" },
-      { href: "/financiamento", label: "Financiar imóvel", icon: "home" },
+      { href: "/financiamento", label: "Financiar imóvel", icon: "home", pro: true },
       { href: "/aprender", label: "Aprender a investir", icon: "book" },
     ],
   },
 ];
 
 const MORE: Item[] = [
-  { href: "/importar", label: "Importar extrato", icon: "upload" },
+  { href: "/importar", label: "Importar extrato", icon: "upload", pro: true },
   { href: "/compartilhar", label: "Compartilhar", icon: "users" },
+  { href: "/planos", label: "Planos", icon: "gift" },
   { href: "/ajuda", label: "Ajuda e perguntas", icon: "help" },
 ];
 
@@ -78,6 +79,7 @@ function NavLink({ item, pathname, small }: { item: Item; pathname: string; smal
     >
       <Icon name={item.icon} size={small ? 18 : 20} />
       {item.label}
+      {item.pro && <span className="ml-auto rounded-md bg-accent-bg px-1.5 py-0.5 text-[10px] font-extrabold text-accent-soft">PRO</span>}
     </Link>
   );
 }

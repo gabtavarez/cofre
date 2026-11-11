@@ -1,6 +1,9 @@
 import { ChatClient } from "@/components/ChatClient";
+import { proGate } from "@/components/ProGate";
 
-export default function Assistente() {
+export default async function Assistente() {
+  const gate = await proGate("Assistente", "Converse com uma IA que conhece as suas contas, gastos, metas e dívidas e responde com base neles.");
+  if (gate) return gate;
   return (
     <>
       <header className="flex flex-col gap-1">

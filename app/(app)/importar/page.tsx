@@ -1,7 +1,10 @@
 import { ImportClient } from "@/components/ImportClient";
+import { proGate } from "@/components/ProGate";
 import { getBase, getCategoryHints } from "@/lib/data";
 
 export default async function Importar() {
+  const gate = await proGate("Importar extrato", "Traga os lançamentos do banco (CSV e OFX) sem digitar nada e sem duplicar.");
+  if (gate) return gate;
   const [{ accounts, categories }, hints] = await Promise.all([getBase(), getCategoryHints()]);
   return (
     <>

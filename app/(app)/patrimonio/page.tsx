@@ -1,9 +1,12 @@
 import { getNetWorth, recordAndGetSnapshots } from "@/lib/data";
+import { proGate } from "@/components/ProGate";
 import { monthLabel, todayISO } from "@/lib/dates";
 import { ChartHover } from "@/components/ChartHover";
 import { brl } from "@/lib/format";
 
 export default async function Patrimonio() {
+  const gate = await proGate("Patrimônio", "Acompanhe a evolução do seu patrimônio líquido mês a mês.");
+  if (gate) return gate;
   const today = todayISO();
   const month = today.slice(0, 7);
   const nw = await getNetWorth(today);

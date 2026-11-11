@@ -1,4 +1,5 @@
 import { buildContext, SYSTEM_PROMPT } from "@/lib/assistant";
+import { getPro } from "@/lib/pro";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   const { data: auth } = await supabase.auth.getClaims();
   const uid = auth?.claims?.sub;
   if (!uid) return Response.json({ error: "Sessão expirada. Entre novamente." }, { status: 401 });
+
+  if (!(await getPro()).active) return Response.json({ error: "O Assistente é do plano Pro. Veja os planos em “Planos”." }, { status: 402 });
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) return Response.json({ error: "not_configured" }, { status: 503 });

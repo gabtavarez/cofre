@@ -253,3 +253,25 @@ create policy "wnotes select" on public.wishlist_notes for select using (user_id
 create policy "wnotes insert" on public.wishlist_notes for insert with check (user_id = (select public.data_owner()));
 create policy "wnotes update" on public.wishlist_notes for update using (user_id = (select public.data_owner())) with check (user_id = (select public.data_owner()));
 create policy "wnotes delete" on public.wishlist_notes for delete using (user_id = (select public.data_owner()));
+
+-- Plano Pro: acesso e pagamentos (escrita só pelo servidor, via service role)
+create table if not exists public.pro_access (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  lifetime boolean not null default false,
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  plan text not null check (plan in ('30d','1y','life')),
+  amount numeric(10,2) not null,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  mp_payment_id text unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists payments_user_idx on public.payments (user_id);
+alter table public.pro_access enable row level security;
+alter table public.payments enable row level security;
+create policy "pro select" on public.pro_access for select using (user_id = (select data_owner()));
+create policy "payments select" on public.payments for select using (user_id = (select data_owner()));

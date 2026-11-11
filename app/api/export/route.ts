@@ -1,3 +1,4 @@
+import { getPro } from "@/lib/pro";
 import { createClient } from "@/lib/supabase/server";
 import { monthBounds } from "@/lib/dates";
 
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   if (!auth?.claims) return new Response("Não autorizado", { status: 401 });
+  if (!(await getPro()).active) return new Response("Exportar é um recurso do plano Pro.", { status: 402 });
 
   const m = new URL(request.url).searchParams.get("m");
   let query = supabase
